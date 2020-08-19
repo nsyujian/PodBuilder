@@ -41,6 +41,7 @@ module PodBuilder
         Podfile.add_install_block(prebuilt_podfile_path)
         Podfile.update_path_entires(prebuilt_podfile_path, false, PodBuilder::project_path(""))
         Podfile.update_project_entries(prebuilt_podfile_path, false, PodBuilder::project_path(""))
+        Podfile.update_require_entries(prebuilt_podfile_path, false, PodBuilder::project_path(""))
 
         Configuration.write
 

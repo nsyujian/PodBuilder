@@ -106,6 +106,7 @@ module PodBuilder
       File.write(podfile_path, podfile_content)
       Podfile.update_path_entires(podfile_path, true)
       Podfile.update_project_entries(podfile_path, true)
+      Podfile.update_require_entries(podfile_path, true)
 
       begin  
         lock_file = "#{Configuration.build_path}/pod_builder.lock"

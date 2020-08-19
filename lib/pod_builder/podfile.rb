@@ -222,6 +222,7 @@ module PodBuilder
       File.write(project_podfile_path, prebuilt_lines.join)
       Podfile.update_path_entires(project_podfile_path, false)
       Podfile.update_project_entries(project_podfile_path, false)
+      Podfile.update_require_entries(project_podfile_path, false)
 
       add_pre_install_actions(project_podfile_path)
       add_post_install_checks(project_podfile_path)
@@ -505,6 +506,42 @@ module PodBuilder
       
       base_path = Pathname.new(File.dirname(podfile_path))
       regex = "(\s*project\s*['|\"])(.*?)(['|\"])"
+
+      podfile_lines = []
+      podfile_content.each_line do |line|
+        stripped_line = strip_line(line)
+        matches = line.match(/#{regex}/)
+
+        if matches&.size == 4 && !stripped_line.start_with?("#")
+          path = matches[2]
+
+          is_absolute = ["~", "/"].include?(path[0])
+          unless !is_absolute
+            podfile_lines.push(line)
+            next
+          end
+
+          original_path = Pathname.new(File.join(path_base, path))
+          replace_path = original_path.relative_path_from(base_path)
+          if use_absolute_paths
+            replace_path = replace_path.expand_path(base_path)
+          end
+                    
+          updated_path_line = line.gsub(/#{regex}/, '\1' + replace_path.to_s + '\3\4')
+          podfile_lines.push(updated_path_line)
+        else
+          podfile_lines.push(line)
+        end
+      end
+
+      File.write(podfile_path, podfile_lines.join)
+    end
+
+    def self.update_require_entries(podfile_path, use_absolute_paths = false, path_base = PodBuilder::basepath(""))
+      podfile_content = File.read(podfile_path)
+      
+      base_path = Pathname.new(File.dirname(podfile_path))
+      regex = "(\s*require_relative\s*['|\"])(.*?)(['|\"])"
 
       podfile_lines = []
       podfile_content.each_line do |line|

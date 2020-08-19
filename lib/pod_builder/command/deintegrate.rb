@@ -35,6 +35,7 @@ module PodBuilder
         File.write(restored_podfile, podfile_lines.join)
         Podfile.update_path_entires(restored_podfile, false)
         Podfile.update_project_entries(restored_podfile, false)
+        Podfile.update_require_entries(restored_podfile, false)
 
         PodBuilder::safe_rm_rf(Configuration.base_path)
 
