@@ -212,8 +212,6 @@ module PodBuilder
         Configuration.build_settings.freeze
 
         sanity_check()
-      else
-        write
       end
       
       dev_pods_configuration_path = File.join(Configuration.base_path, Configuration.dev_pods_configuration_filename)
