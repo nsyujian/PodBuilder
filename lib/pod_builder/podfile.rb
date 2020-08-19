@@ -468,16 +468,16 @@ module PodBuilder
       podfile_content = File.read(podfile_path)
       
       base_path = Pathname.new(File.dirname(podfile_path))
-      regex = "(\s*pod\s*['|\"])(.*?)(['|\"])(.*?)(:path\s*=>\s*['|\"])(.*?)(['|\"])"
+      regex = "(\s*pod\s*['|\"])(.*?)(['|\"])(.*?):(path|podspec)(\s*=>\s*['|\"])(.*?)(['|\"])"
 
       podfile_lines = []
       podfile_content.each_line do |line|
         stripped_line = strip_line(line)
         matches = line.match(/#{regex}/)
 
-        if matches&.size == 8 && !stripped_line.start_with?("#")
+        if matches&.size == 9 && !stripped_line.start_with?("#")
           pod_name = matches[2]
-          path = matches[6]
+          path = matches[7]
 
           is_absolute = ["~", "/"].include?(path[0])
           unless !PodBuilder::prebuiltpath.end_with?(path) && !is_absolute
@@ -491,7 +491,7 @@ module PodBuilder
             replace_path = replace_path.expand_path(base_path)
           end
                     
-          updated_path_line = line.gsub(/#{regex}/, '\1\2\3\4\5' + replace_path.to_s + '\7\8')
+          updated_path_line = line.gsub(/#{regex}/, '\1\2\3\4:\5\6' + replace_path.to_s + '\8\9')
           podfile_lines.push(updated_path_line)
         else
           podfile_lines.push(line)
