@@ -481,18 +481,26 @@ module PodBuilder
     end
 
     def source_files_from_string(source)
+      # Transform source file entries 
+      # "Networking{Response,Request}*.{h,m}" -> ["NetworkingResponse*.h", "NetworkingResponse*.m", "NetworkingRequest*.h", "NetworkingRequest*.m"]
       files = []
       if source.is_a? String 
-        matches = source.match(/(.*)({(.),?(.)?})/)
-        if matches&.size == 5
-          source = matches[1] + matches[3]
-          if matches[4].length > 0
-            source += "," + matches[1] + matches[4]
+        matches = source.match(/(.*){(.*)}(.*)/)
+        if matches&.size == 4
+          res = matches[2].split(",").map { |t| "#{matches[1]}#{t}#{matches[3]}" }
+          if res.any? { |t| t.include?("{") }
+            return res.map { |t| source_files_from_string(t) }.flatten
           end
+  
+          return res
         end
 
         return source.split(",")
       else
+        if source.any? { |t| t.include?("{") }
+          return source.map { |t| source_files_from_string(t) }.flatten
+        end
+
         return source
       end
     end
