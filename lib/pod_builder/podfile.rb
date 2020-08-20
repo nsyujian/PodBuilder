@@ -171,45 +171,34 @@ module PodBuilder
           next
         end
 
-        if pod_name = pod_definition_in(line, true)
+        if pod_name = pod_definition_in(line, true)          
           if podfile_item = all_buildable_items.detect { |x| x.name == pod_name }
-            if Podspec.include?(podfile_item.root_name)
-              if podfile_item.vendored_framework_path.nil?
-                marker = podfile_item.prebuilt_marker()
+            marker = podfile_item.prebuilt_marker()
 
-                podfile_item_dependency_items = all_buildable_items.select { |x| podfile_item.dependency_names.include?(x.name) && x.vendored_framework_path.nil? == false }
-                if podfile_item_dependency_items.count > 0
-                  prebuilt_lines += podfile_item_dependency_items.map { |x| "#{line.detect_indentation}#{x.prebuilt_entry(false)}#{marker}\n" }.uniq
-                else
-                  prebuilt_lines.push(line)
-                end
-              else 
-                prebuilt_lines.push("#{line.detect_indentation}#{podfile_item.prebuilt_entry}\n")
+            non_explicit_dependencies = podfile_item.recursive_dependencies(all_buildable_items) - explicit_deps
+            non_explicit_dependencies_root_names = non_explicit_dependencies.map(&:root_name).uniq.filter { |t| t != podfile_item.root_name }
+            non_explicit_dependencies = non_explicit_dependencies_root_names.map { |x| 
+              if item = all_buildable_items.detect { |t| x == t.name }
+                item                    
+              else
+                item = all_buildable_items.detect { |t| x == t.root_name }
+              end
+            }.compact
+            
+            non_explicit_dependencies.each do |dep|
+              dep_item = all_buildable_items.detect { |x| x.name == dep.name }
 
-                marker = podfile_item.prebuilt_marker()
-                non_explicit_dependencies = podfile_item.recursive_dependencies(all_buildable_items) - explicit_deps
-                non_explicit_dependencies_root_names = non_explicit_dependencies.map(&:root_name).uniq.filter { |t| t != podfile_item.root_name }
-                non_explicit_dependencies = non_explicit_dependencies_root_names.map { |x| 
-                  if item = all_buildable_items.detect { |t| x == t.name }
-                    item                    
-                  else
-                    item = all_buildable_items.detect { |t| x == t.root_name }
-                  end
-                }.compact
-               
-                non_explicit_dependencies.each do |dep|
-                  dep_item = all_buildable_items.detect { |x| x.name == dep.name }
-
-                  if Podspec.include?(dep_item.root_name)
-                    pod_name = dep_item.prebuilt_entry(false)
-                    pod_name.gsub!(dep.name, dep.root_name)
-                    prebuilt_lines.push("#{line.detect_indentation}#{pod_name}#{marker}\n")
-                  end
-
-                  explicit_deps.push(dep)
-                end
+              if Podspec.include?(dep_item.root_name)
+                pod_name = dep_item.prebuilt_entry(false)
+                pod_name.gsub!(dep.name, dep.root_name)
+                prebuilt_lines.push("#{line.detect_indentation}#{pod_name}#{marker}\n")
               end
 
+              explicit_deps.push(dep)
+            end       
+
+            if Podspec.include?(podfile_item.root_name)
+              prebuilt_lines.push("#{line.detect_indentation}#{podfile_item.prebuilt_entry}\n")
               next
             end
           end

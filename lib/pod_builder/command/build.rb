@@ -29,9 +29,12 @@ module PodBuilder
 
         build_all = argument_pods.first == "*"
         if build_all
-          argument_pods = analyzer.explicit_pods().map(&:root_name).uniq
+          argument_pods = all_buildable_items.map(&:root_name).uniq
         else
           argument_pods = Podfile::resolve_pod_names(argument_pods, all_buildable_items)
+          deps = all_buildable_items.select { |t| argument_pods.include?(t.root_name) }.map(&:dependency_names).flatten.map { |t| t.split("/").first }
+          argument_pods += deps
+          argument_pods.uniq!
         end
 
         available_argument_pods = argument_pods.select { |x| all_buildable_items.map(&:root_name).include?(x) }     
