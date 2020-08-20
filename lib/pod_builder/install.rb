@@ -116,6 +116,8 @@ module PodBuilder
 
         framework_build_hashes = Hash.new
         if !OPTIONS.has_key?(:force_rebuild)
+          podfile_content = File.read(podfile_path)
+
           download # Copy files under #{Configuration.build_path}/Pods so that we can determine build folder hashes
 
           # Replace prebuilt entries in Podfile for Pods that have no changes in source code which will avoid rebuilding them
