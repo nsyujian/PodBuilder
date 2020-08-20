@@ -57,6 +57,10 @@ module PodBuilder
         pod_name = matches[1]
         
         return { "repo": "local" }
+      elsif (matches = line&.match(/pod '(.*)', :podspec => '(.*)'/)) && matches.size == 3
+        pod_name = matches[1]
+        
+        return { "repo": "local" }
       else
         raise "Failed extracting version from line:\n#{line}\n\n"
       end

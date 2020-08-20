@@ -36,6 +36,10 @@ module PodBuilder
     #
     attr_accessor :path
 
+    # @return [String] Local podspec path, if any
+    #
+    attr_accessor :podspec_path
+
     # @return [String] The pinned commit of the pod, if any
     #
     attr_reader :commit
@@ -139,6 +143,7 @@ module PodBuilder
         @tag = checkout_options[opts_key][:tag]
         @commit = checkout_options[opts_key][:commit]
         @path = checkout_options[opts_key][:path]
+        @podspec_path = checkout_options[opts_key][:podspec]
         @branch = checkout_options[opts_key][:branch]
         @is_external = true
       else
@@ -337,6 +342,8 @@ module PodBuilder
       if is_external
         if @path
           e += ", :path => '#{@path}'"  
+        elsif @podspec_path
+          e += ", :podspec => '#{@podspec_path}'"  
         else
           if @repo
             e += ", :git => '#{@repo}'"  
