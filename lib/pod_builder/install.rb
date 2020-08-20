@@ -360,7 +360,7 @@ module PodBuilder
         item_path = "#{Configuration.build_path}/Pods/#{podfile_item.root_name}"
       end
 
-      return `find '#{item_path}' -type f -print0 | sort -z | xargs -0 sha1sum | sha1sum | cut -d' ' -f1`.strip()
+      return `find '#{item_path}' -type f -print0 | sort -z | xargs -0 shasum | shasum | cut -d' ' -f1`.strip()
     end
   end
 end
