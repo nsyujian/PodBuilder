@@ -96,8 +96,6 @@ module PodBuilder
         # debug info reference to this path. Doing otherwise breaks the assumptions that makes the `update_lldbinit`
         # command work
         podfile_content.gsub!("'#{podfile_item.path}'", "'#{destination_path}'")
-        
-        license_files = Dir.glob("#{destination_path}/**/*acknowledgements.plist").each { |f| File.delete(f) }
       end
       
       init_git(Configuration.build_path) # this is needed to be able to call safe_rm_rf
