@@ -83,60 +83,22 @@ module PodBuilder
 
       PodBuilder::safe_rm_rf(Configuration.build_path)
       FileUtils.mkdir_p(Configuration.build_path)
-
-      # Development pods are normally built/integrated without moving files from their original paths.
-      # It is important that CocoaPods compiles the files under Configuration.build_path in order that 
-      # DWARF debug info reference to this constant path. Doing otherwise breaks the assumptions that 
-      # makes  the `update_lldbinit` command work.
-      development_pods = podfile_items.select { |x| x.is_development_pod }      
-      development_pods.each do |podfile_item|
-        destination_path = "#{Configuration.build_path}/Pods/#{podfile_item.name}"
-        FileUtils.mkdir_p(destination_path)
-
-        if Pathname.new(podfile_item.path).absolute?
-          FileUtils.cp_r("#{podfile_item.path}/.", destination_path)
-        else 
-          FileUtils.cp_r("#{PodBuilder::basepath(podfile_item.path)}/.", destination_path)
-        end
-
-        podfile_content.gsub!("'#{podfile_item.path}'", "'#{destination_path}'")
-      end
       
       init_git(Configuration.build_path) # this is needed to be able to call safe_rm_rf
+
+      copy_development_pods_source_code(podfile_items)
 
       podfile_content = Podfile.update_path_entires(podfile_content, :podfile_path_transform)
       podfile_content = Podfile.update_project_entries(podfile_content, :podfile_path_transform)
       podfile_content = Podfile.update_require_entries(podfile_content, :podfile_path_transform)
       podfile_content = Podfile.prepare_podspec_entries(podfile_content)
+      podfile_content = user_prebuilt_entries_for_unchanged_pods(podfile_content, podfile_items)
+
+      File.write(File.join(Configuration.build_path, "Podfile"), podfile_content)
 
       begin  
         lock_file = "#{Configuration.build_path}/pod_builder.lock"
         FileUtils.touch(lock_file)
-
-        framework_build_hashes = Hash.new
-        if !OPTIONS.has_key?(:force_rebuild)
-          download # Copy files under #{Configuration.build_path}/Pods so that we can determine build folder hashes
-
-          # Replace prebuilt entries in Podfile for Pods that have no changes in source code which will avoid rebuilding them
-          items = podfile_items.group_by { |t| t.root_name }.map { |k, v| v.first } # Return one podfile_item per root_name
-          items.each do |item|
-            framework_path = File.join(PodBuilder::prebuiltpath, "#{item.module_name}.framework")
-            podspec_path = File.join(PodBuilder::prebuiltpath, "#{item.root_name}.podspec")
-            if (last_build_folder_hash = build_folder_hash_in_framework_plist_info(framework_path)) && File.exist?(podspec_path)
-              if last_build_folder_hash == build_folder_hash(item)
-                puts "No changes detected to '#{item.root_name}', will skip rebuild".blue
-                podfile_items.select { |t| t.root_name == item.root_name }.each do |replace_item|
-                  replace_regex = "pod '#{Regexp.quote(replace_item.name)}', .*"
-                  replace_line_found = podfile_content =~ /#{replace_regex}/i
-                  raise "Failed finding pod entry for '#{replace_item.name}'" unless replace_line_found
-                  podfile_content.gsub!(/#{replace_regex}/, replace_item.prebuilt_entry(true, true))
-                end
-              end
-            end
-          end
-        end  
-
-        File.write(File.join(Configuration.build_path, "Podfile"), podfile_content)
   
         install
 
@@ -157,6 +119,54 @@ module PodBuilder
     end
 
     private 
+
+    def self.copy_development_pods_source_code(podfile_items)
+      # Development pods are normally built/integrated without moving files from their original paths.
+      # It is important that CocoaPods compiles the files under Configuration.build_path in order that 
+      # DWARF debug info reference to this constant path. Doing otherwise breaks the assumptions that 
+      # makes  the `update_lldbinit` command work.
+      development_pods = podfile_items.select { |x| x.is_development_pod }      
+      development_pods.each do |podfile_item|
+        destination_path = "#{Configuration.build_path}/Pods/#{podfile_item.name}"
+        FileUtils.mkdir_p(destination_path)
+
+        if Pathname.new(podfile_item.path).absolute?
+          FileUtils.cp_r("#{podfile_item.path}/.", destination_path)
+        else 
+          FileUtils.cp_r("#{PodBuilder::basepath(podfile_item.path)}/.", destination_path)
+        end
+
+        podfile_content.gsub!("'#{podfile_item.path}'", "'#{destination_path}'")
+      end
+    end
+
+    def self.user_prebuilt_entries_for_unchanged_pods(podfile_content, podfile_items)
+      if OPTIONS.has_key?(:force_rebuild)
+        return podfile_content
+      end
+
+      download # Copy files under #{Configuration.build_path}/Pods so that we can determine build folder hashes
+
+      # Replace prebuilt entries in Podfile for Pods that have no changes in source code which will avoid rebuilding them
+      items = podfile_items.group_by { |t| t.root_name }.map { |k, v| v.first } # Return one podfile_item per root_name
+      items.each do |item|
+        framework_path = File.join(PodBuilder::prebuiltpath, "#{item.module_name}.framework")
+        podspec_path = File.join(PodBuilder::prebuiltpath, "#{item.root_name}.podspec")
+        if (last_build_folder_hash = build_folder_hash_in_framework_plist_info(framework_path)) && File.exist?(podspec_path)
+          if last_build_folder_hash == build_folder_hash(item)
+            puts "No changes detected to '#{item.root_name}', will skip rebuild".blue
+            podfile_items.select { |t| t.root_name == item.root_name }.each do |replace_item|
+              replace_regex = "pod '#{Regexp.quote(replace_item.name)}', .*"
+              replace_line_found = podfile_content =~ /#{replace_regex}/i
+              raise "Failed finding pod entry for '#{replace_item.name}'" unless replace_line_found
+              podfile_content.gsub!(/#{replace_regex}/, replace_item.prebuilt_entry(true, true))
+            end
+          end
+        end
+      end
+
+      return podfile_content
+    end
 
     def self.install
       puts "Building frameworks".yellow
