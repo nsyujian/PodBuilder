@@ -37,11 +37,15 @@ module PodBuilder
         project_podfile_path = PodBuilder::project_path("Podfile")
         prebuilt_podfile_path = File.join(options[:prebuild_path], "Podfile")
         FileUtils.cp(project_podfile_path, prebuilt_podfile_path)
+
+        podfile_content = File.read(prebuilt_podfile_path)
         
-        Podfile.add_install_block(prebuilt_podfile_path)
-        Podfile.update_path_entires(prebuilt_podfile_path, false, PodBuilder::project_path(""))
-        Podfile.update_project_entries(prebuilt_podfile_path, false, PodBuilder::project_path(""))
-        Podfile.update_require_entries(prebuilt_podfile_path, false, PodBuilder::project_path(""))
+        podfile_content = Podfile.add_install_block(podfile_content)
+        podfile_content = Podfile.update_path_entires(podfile_content, :podfile_path_transform)
+        podfile_content = Podfile.update_project_entries(podfile_content, :podfile_path_transform)
+        podfile_content = Podfile.update_require_entries(podfile_content, :podfile_path_transform)
+
+        File.write(prebuilt_podfile_path, podfile_content)
 
         Configuration.write
 
@@ -52,6 +56,22 @@ module PodBuilder
       end
 
       private 
+
+      def self.podfile_path_transform(path)
+        use_absolute_paths = false
+        podfile_path = File.join(options[:prebuild_path], "Podfile")
+        original_basepath = PodBuilder::project_path
+
+        podfile_base_path = Pathname.new(File.dirname(podfile_path))
+  
+        original_path = Pathname.new(File.join(original_basepath, path))
+        replace_path = original_path.relative_path_from(podfile_base_path)
+        if use_absolute_paths
+          replace_path = replace_path.expand_path(podfile_base_path)
+        end
+  
+        return replace_path
+      end   
 
       def self.update_gemfile
         gemfile_path = File.join(PodBuilder::home, "Gemfile")

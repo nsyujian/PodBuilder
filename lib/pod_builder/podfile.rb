@@ -207,14 +207,17 @@ module PodBuilder
         prebuilt_lines.push(line)
       end
 
-      project_podfile_path = PodBuilder::project_path("Podfile")
-      File.write(project_podfile_path, prebuilt_lines.join)
-      Podfile.update_path_entires(project_podfile_path, false)
-      Podfile.update_project_entries(project_podfile_path, false)
-      Podfile.update_require_entries(project_podfile_path, false)
+      podfile_content = prebuilt_lines.join
 
-      add_pre_install_actions(project_podfile_path)
-      add_post_install_checks(project_podfile_path)
+      podfile_content = Podfile.update_path_entires(podfile_content, :podfile_path_transform)
+      podfile_content = Podfile.update_project_entries(podfile_content, :podfile_path_transform)
+      podfile_content = Podfile.update_require_entries(podfile_content, :podfile_path_transform)
+
+      podfile_content = add_pre_install_actions(podfile_content)
+      podfile_content = add_post_install_checks(podfile_content)
+
+      project_podfile_path = PodBuilder::project_path("Podfile")
+      File.write(project_podfile_path, podfile_content)
     end
 
     def self.install
@@ -229,10 +232,6 @@ module PodBuilder
     def self.strip_line(line)
       stripped_line = line.strip
       return stripped_line.gsub("\"", "'").gsub(" ", "").gsub("\t", "").gsub("\n", "")
-    end
-
-    def self.add_install_block(podfile_path)
-      add(PODBUILDER_LOCK_ACTION, "pre_install", podfile_path)
     end
 
     def self.pod_definition_in(line, include_commented)
@@ -359,9 +358,23 @@ module PodBuilder
 
     private
 
-    def self.indentation_from_file(path)
-      content = File.read(path)
+    def self.podfile_path_transform(path)
+      use_absolute_paths = false
+      podfile_path = PodBuilder::project_path("Podfile")
+      original_basepath = PodBuilder::basepath
 
+      podfile_base_path = Pathname.new(File.dirname(podfile_path))
+
+      original_path = Pathname.new(File.join(original_basepath, path))
+      replace_path = original_path.relative_path_from(podfile_base_path)
+      if use_absolute_paths
+        replace_path = replace_path.expand_path(podfile_base_path)
+      end
+
+      return replace_path
+    end  
+
+    def self.indentation_from_string(content)
       lines = content.split("\n").select { |x| !x.empty? }
 
       if lines.count > 2
@@ -417,18 +430,20 @@ module PodBuilder
       return buildable_items
     end
 
-    def self.add_pre_install_actions(podfile_path)
-      add(PRE_INSTALL_ACTIONS + [" "], "pre_install", podfile_path)
+    def self.add_install_block(podfile_content)
+      return add(PODBUILDER_LOCK_ACTION, "pre_install", podfile_content)
     end
 
-    def self.add_post_install_checks(podfile_path)
-      add(POST_INSTALL_ACTIONS + [" "], "post_install", podfile_path)
+    def self.add_pre_install_actions(podfile_content)
+      return add(PRE_INSTALL_ACTIONS + [" "], "pre_install", podfile_content)
     end
 
-    def self.add(entries, marker, podfile_path)
-      podfile_content = File.read(podfile_path)
+    def self.add_post_install_checks(podfile_content)
+      return add(POST_INSTALL_ACTIONS + [" "], "post_install", podfile_content)
+    end
 
-      file_indentation = indentation_from_file(podfile_path)
+    def self.add(entries, marker, podfile_content)
+      file_indentation = indentation_from_string(podfile_content)
 
       entries = entries.map { |x| "#{file_indentation}#{x}\n"}
 
@@ -450,13 +465,10 @@ module PodBuilder
         podfile_lines.push("end\n")
       end
 
-      File.write(podfile_path, podfile_lines.join)
+      return podfile_lines.join
     end
     
-    def self.update_path_entires(podfile_path, use_absolute_paths = false, path_base = PodBuilder::basepath(""))
-      podfile_content = File.read(podfile_path)
-      
-      base_path = Pathname.new(File.dirname(podfile_path))
+    def self.update_path_entires(podfile_content, path_transform)
       regex = "(\s*pod\s*['|\"])(.*?)(['|\"])(.*?):(path|podspec)(\s*=>\s*['|\"])(.*?)(['|\"])"
 
       podfile_lines = []
@@ -474,11 +486,7 @@ module PodBuilder
             next
           end
 
-          original_path = Pathname.new(File.join(path_base, path))
-          replace_path = original_path.relative_path_from(base_path)
-          if use_absolute_paths
-            replace_path = replace_path.expand_path(base_path)
-          end
+          replace_path = path_transform.call(path)
                     
           updated_path_line = line.gsub(/#{regex}/, '\1\2\3\4:\5\6' + replace_path.to_s + '\8\9')
           podfile_lines.push(updated_path_line)
@@ -487,13 +495,10 @@ module PodBuilder
         end
       end
 
-      File.write(podfile_path, podfile_lines.join)
+      return podfile_lines.join
     end
 
-    def self.update_project_entries(podfile_path, use_absolute_paths = false, path_base = PodBuilder::basepath(""))
-      podfile_content = File.read(podfile_path)
-      
-      base_path = Pathname.new(File.dirname(podfile_path))
+    def self.update_project_entries(podfile_content, path_transform)      
       regex = "(\s*project\s*['|\"])(.*?)(['|\"])"
 
       podfile_lines = []
@@ -510,11 +515,7 @@ module PodBuilder
             next
           end
 
-          original_path = Pathname.new(File.join(path_base, path))
-          replace_path = original_path.relative_path_from(base_path)
-          if use_absolute_paths
-            replace_path = replace_path.expand_path(base_path)
-          end
+          replace_path = path_transform.call(path)
                     
           updated_path_line = line.gsub(/#{regex}/, '\1' + replace_path.to_s + '\3\4')
           podfile_lines.push(updated_path_line)
@@ -523,13 +524,10 @@ module PodBuilder
         end
       end
 
-      File.write(podfile_path, podfile_lines.join)
+      return podfile_lines.join
     end
 
-    def self.update_require_entries(podfile_path, use_absolute_paths = false, path_base = PodBuilder::basepath(""))
-      podfile_content = File.read(podfile_path)
-      
-      base_path = Pathname.new(File.dirname(podfile_path))
+    def self.update_require_entries(podfile_content, path_transform)
       regex = "(\s*require_relative\s*['|\"])(.*?)(['|\"])"
 
       podfile_lines = []
@@ -546,11 +544,7 @@ module PodBuilder
             next
           end
 
-          original_path = Pathname.new(File.join(path_base, path))
-          replace_path = original_path.relative_path_from(base_path)
-          if use_absolute_paths
-            replace_path = replace_path.expand_path(base_path)
-          end
+          replace_path = path_transform.call(path)
                     
           updated_path_line = line.gsub(/#{regex}/, '\1' + replace_path.to_s + '\3\4')
           podfile_lines.push(updated_path_line)
@@ -559,13 +553,10 @@ module PodBuilder
         end
       end
 
-      File.write(podfile_path, podfile_lines.join)
+      return podfile_lines.join
     end
 
-    def self.prepare_podspec_entries(podfile_path, use_absolute_paths = false, path_base = PodBuilder::basepath(""))
-      podfile_content = File.read(podfile_path)
-      
-      base_path = Pathname.new(File.dirname(podfile_path))
+    def self.prepare_podspec_entries(podfile_content)      
       regex = "(\s*pod\s*['|\"])(.*?)(['|\"])(.*?)(:podspec)(\s*=>\s*['|\"])(.*?)(['|\"])"
 
       podspec_basepath = "#{Configuration.build_path}/podspecs"
@@ -592,7 +583,7 @@ module PodBuilder
         end
       end
 
-      File.write(podfile_path, podfile_lines.join)
+      return podfile_lines.join
     end
   end
 end

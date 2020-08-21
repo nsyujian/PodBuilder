@@ -104,13 +104,10 @@ module PodBuilder
       
       init_git(Configuration.build_path) # this is needed to be able to call safe_rm_rf
 
-      podfile_path = "#{Configuration.build_path}/Podfile"
-      File.write(podfile_path, podfile_content)
-
-      Podfile.update_path_entires(podfile_path, true)
-      Podfile.update_project_entries(podfile_path, true)
-      Podfile.update_require_entries(podfile_path, true)
-      Podfile.prepare_podspec_entries(podfile_path, true)
+      podfile_content = Podfile.update_path_entires(podfile_content, :podfile_path_transform)
+      podfile_content = Podfile.update_project_entries(podfile_content, :podfile_path_transform)
+      podfile_content = Podfile.update_require_entries(podfile_content, :podfile_path_transform)
+      podfile_content = Podfile.prepare_podspec_entries(podfile_content)
 
       begin  
         lock_file = "#{Configuration.build_path}/pod_builder.lock"
@@ -118,8 +115,6 @@ module PodBuilder
 
         framework_build_hashes = Hash.new
         if !OPTIONS.has_key?(:force_rebuild)
-          podfile_content = File.read(podfile_path)
-
           download # Copy files under #{Configuration.build_path}/Pods so that we can determine build folder hashes
 
           # Replace prebuilt entries in Podfile for Pods that have no changes in source code which will avoid rebuilding them
@@ -139,9 +134,9 @@ module PodBuilder
               end
             end
           end
-
-          File.write(podfile_path, podfile_content)          
         end  
+
+        File.write(File.join(Configuration.build_path, "Podfile"), podfile_content)
   
         install
 
@@ -368,5 +363,21 @@ module PodBuilder
 
       return `find '#{item_path}' -type f -print0 | sort -z | xargs -0 shasum | shasum | cut -d' ' -f1`.strip()
     end
+    
+    def self.podfile_path_transform(path)
+      use_absolute_paths = true
+      podfile_path = File.join(Configuration.build_path, "Podfile")
+      original_basepath = PodBuilder::basepath
+
+      podfile_base_path = Pathname.new(File.dirname(podfile_path))
+
+      original_path = Pathname.new(File.join(original_basepath, path))
+      replace_path = original_path.relative_path_from(podfile_base_path)
+      if use_absolute_paths
+        replace_path = replace_path.expand_path(podfile_base_path)
+      end
+
+      return replace_path
+    end  
   end
 end
