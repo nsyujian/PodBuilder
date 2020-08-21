@@ -1,3 +1,6 @@
+# This file contains the logic that generates the .podspec files that are placed
+# along to the prebuild frameworks under Frameworks/Rome
+
 module PodBuilder
   class Podspec
     def self.generate(all_buildable_items, analyzer)  

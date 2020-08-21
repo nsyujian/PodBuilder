@@ -2,6 +2,8 @@ require 'cfpropertylist'
 require 'digest'
 require 'colored'
 
+# The following begin/end clause contains a set of monkey patches of the original CP implementation
+
 # The Pod::Target and Pod::Installer::Xcode::PodTargetDependencyInstaller swizzles patch
 # the following issues: 
 # - https://github.com/CocoaPods/Rome/issues/81
@@ -75,14 +77,19 @@ end
 
 module PodBuilder
   class Install
+    # This method will build frameworks starting from the "/tmp/pod_builder/Podfile"
     def self.podfile(podfile_content, podfile_items, build_configuration)
       puts "Preparing build Podfile".yellow
 
       PodBuilder::safe_rm_rf(Configuration.build_path)
       FileUtils.mkdir_p(Configuration.build_path)
 
-      # Copy the repo to extract license (and potentially other files in the future)
-      podfile_items.select { |x| x.is_development_pod }.each do |podfile_item|
+      # Development pods are normally built/integrated without moving files from their original paths.
+      # It is important that CocoaPods compiles the files under Configuration.build_path in order that 
+      # DWARF debug info reference to this constant path. Doing otherwise breaks the assumptions that 
+      # makes  the `update_lldbinit` command work.
+      development_pods = podfile_items.select { |x| x.is_development_pod }      
+      development_pods.each do |podfile_item|
         destination_path = "#{Configuration.build_path}/Pods/#{podfile_item.name}"
         FileUtils.mkdir_p(destination_path)
 
@@ -92,9 +99,6 @@ module PodBuilder
           FileUtils.cp_r("#{PodBuilder::basepath(podfile_item.path)}/.", destination_path)
         end
 
-        # It is important that CocoaPods compiles the files under Configuration.build_path in order that DWARF
-        # debug info reference to this path. Doing otherwise breaks the assumptions that makes the `update_lldbinit`
-        # command work
         podfile_content.gsub!("'#{podfile_item.path}'", "'#{destination_path}'")
       end
       

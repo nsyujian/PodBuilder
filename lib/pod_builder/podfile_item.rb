@@ -1,3 +1,6 @@
+# This class is the model that PodBuilder uses for every pod spec. The model is instantiated
+# from Pod::Specification
+
 module PodBuilder
   class PodfileItem
     # @return [String] The git repo
