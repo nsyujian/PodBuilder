@@ -15,7 +15,7 @@ module PodBuilder
     end
 
     def self.include?(pod_name)
-      return File.exist?(PodBuilder::prebuiltpath("#{pod_name}.podspec"))
+      return File.exist?(PodBuilder::podspecspath("#{pod_name}.podspec"))
     end
     
     private
@@ -134,7 +134,7 @@ module PodBuilder
     end
 
     def self.generate_podspec_from(all_buildable_items, platform)
-      specs = Dir.glob(PodBuilder::prebuiltpath("*.podspec"))
+      specs = Dir.glob(PodBuilder::podspecspath("*.podspec"))
       specs.each do |s| 
         FileUtils.rm(s)
       end
@@ -168,7 +168,7 @@ module PodBuilder
         podspec += main_keys
         podspec += "end"
 
-        spec_path = PodBuilder::prebuiltpath("#{item.root_name}.podspec")
+        spec_path = PodBuilder::podspecspath("#{item.root_name}.podspec")
         File.write(spec_path, podspec)
       end
     end
