@@ -4,7 +4,7 @@ require 'digest'
 module PodBuilder
   module Command
     class ClearLldbInit
-      def self.call(options)
+      def self.call
 
         argument_pods = ARGV.dup
         
@@ -34,7 +34,7 @@ module PodBuilder
       
         File.write(lldbinit_path, lldbinit_lines.join())
 
-        if options.nil? == false
+        if OPTIONS.nil? == false
           puts "\n\n🎉 done!\n".green
         end
         return 0

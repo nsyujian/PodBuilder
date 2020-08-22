@@ -4,7 +4,7 @@ require 'cfpropertylist'
 module PodBuilder
   module Command
     class Update
-      def self.call(options)          
+      def self.call
         Configuration.check_inited
         PodBuilder::prepare_basepath
 
@@ -28,7 +28,7 @@ module PodBuilder
           puts "Frameworks in sync!\n".green
           return 0
         end
-        if options.has_key?(:dry_run)
+        if OPTIONS.has_key?(:dry_run)
           puts "`#{pods_to_update.join("`, `")}` need to be rebuilt!\n".red
           return -2
         end
@@ -36,8 +36,8 @@ module PodBuilder
         ARGV.clear
         pods_to_update.each { |x| ARGV << x }
 
-        # options[:auto_resolve_dependencies] = true
-        return PodBuilder::Command::Build.call(options)
+        # OPTIONS[:auto_resolve_dependencies] = true
+        return PodBuilder::Command::Build.call
       end              
     end
   end

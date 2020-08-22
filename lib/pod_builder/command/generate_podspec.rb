@@ -3,7 +3,7 @@ require 'pod_builder/core'
 module PodBuilder
   module Command
     class GeneratePodspec
-      def self.call(options)
+      def self.call
         Configuration.check_inited
         PodBuilder::prepare_basepath
 

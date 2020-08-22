@@ -3,7 +3,7 @@ require 'pod_builder/core'
 module PodBuilder
   module Command
     class Switch
-      def self.call(options)
+      def self.call
         Configuration.check_inited
         PodBuilder::prepare_basepath
         
@@ -28,7 +28,7 @@ module PodBuilder
           development_path = ""
           default_entries = Hash.new
 
-          case options[:switch_mode]
+          case OPTIONS[:switch_mode]
           when "development"
             development_path = find_podspec(pod_name_to_switch)          
           when "prebuilt"
@@ -74,7 +74,7 @@ module PodBuilder
             matches = line.gsub("\"", "'").match(/pod '(.*?)',(.*)/)
             if matches&.size == 3
               if matches[1].split("/").first == pod_name_to_switch
-                case options[:switch_mode]
+                case OPTIONS[:switch_mode]
                 when "prebuilt"
                   indentation = line.split("pod '").first
                   rel_path = Pathname.new(PodBuilder::prebuiltpath).relative_path_from(Pathname.new(PodBuilder::project_path)).to_s
@@ -105,7 +105,7 @@ module PodBuilder
                     raise "Line for pod '#{matches[1]}' in section '#{current_section}' not found in PodBuilder's Podfile"
                   end
                 else
-                  raise "Unsupported mode '#{options[:switch_mode]}'"
+                  raise "Unsupported mode '#{OPTIONS[:switch_mode]}'"
                 end
               end  
             end

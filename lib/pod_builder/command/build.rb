@@ -3,7 +3,7 @@ require 'pod_builder/core'
 module PodBuilder
   module Command
     class Build
-      def self.call(options) 
+      def self.call 
         Configuration.check_inited
         PodBuilder::prepare_basepath
 
@@ -20,7 +20,7 @@ module PodBuilder
 
         puts "Loading Podfile".yellow
 
-        install_update_repo = options.fetch(:update_repos, true)
+        install_update_repo = OPTIONS.fetch(:update_repos, true)
         installer, analyzer = Analyze.installer_at(PodBuilder::basepath, install_update_repo)
 
         all_buildable_items = Analyze.podfile_items(installer, analyzer)
@@ -49,10 +49,10 @@ module PodBuilder
 
         restore_file_error = Podfile.restore_file_sanity_check
   
-        check_splitted_subspecs_are_static(all_buildable_items, options)
+        check_splitted_subspecs_are_static(all_buildable_items)
         check_pods_exists(argument_pods, all_buildable_items)
 
-        pods_to_build = resolve_pods_to_build(argument_pods, buildable_items, options)
+        pods_to_build = resolve_pods_to_build(argument_pods, buildable_items)
         buildable_items -= pods_to_build
 
         # We need to split pods to build in 3 groups
@@ -60,7 +60,7 @@ module PodBuilder
         # 2. pods to build in release
         # 3. pods to build in debug
 
-        check_not_building_development_pods(pods_to_build, options)
+        check_not_building_development_pods(pods_to_build)
 
         pods_to_build_subspecs = pods_to_build.select { |x| x.is_subspec && Configuration.subspecs_to_split.include?(x.name) }
 
@@ -98,7 +98,7 @@ module PodBuilder
 
         Licenses::write(licenses, all_buildable_items)
 
-        GenerateLFS::call(nil)
+        GenerateLFS::call()
         Podspec::generate(all_buildable_items, analyzer)
 
         builded_pods = podfiles_items.flatten
@@ -107,13 +107,13 @@ module PodBuilder
         builded_pods_and_deps.select! { |x| !x.is_prebuilt }
         
         Podfile::write_restorable(builded_pods_and_deps + prebuilt_pods_to_install, all_buildable_items, analyzer)     
-        if !options.has_key?(:skip_prebuild_update)   
+        if !OPTIONS.has_key?(:skip_prebuild_update)   
           Podfile::write_prebuilt(all_buildable_items, analyzer)
         end
 
         Podfile::install
 
-        sanity_checks(options)
+        sanity_checks
 
         if (restore_file_error = restore_file_error) && Configuration.restore_enabled
           puts "\n\n⚠️ Podfile.restore was found invalid and was overwritten. Error:\n #{restore_file_error}".red
@@ -152,7 +152,7 @@ module PodBuilder
       #   return deps
       # end
 
-      # def self.expected_common_dependencies(pods_to_build, buildable_items, options)
+      # def self.expected_common_dependencies(pods_to_build, buildable_items)
       #   warned_expected_pod_list = []
       #   expected_pod_list = []
       #   errors = []
@@ -178,7 +178,7 @@ module PodBuilder
       #             errors.uniq!
       #             warned_expected_pod_list.push(expected_list)
 
-      #             if options.has_key?(:auto_resolve_dependencies)
+      #             if OPTIONS.has_key?(:auto_resolve_dependencies)
       #               puts "`#{pod_to_build.name}` has the following dependencies:\n`#{buildable_dependencies(pod_to_build, buildable_items).join("`, `")}`\nWhich are in common with `#{buildable_pod.name}` and requires it to be recompiled\n\n".yellow
       #             end
       #           end
@@ -190,7 +190,7 @@ module PodBuilder
       #   return expected_pod_list, errors
       # end
 
-      # def self.expected_parent_dependencies(pods_to_build, buildable_items, options)
+      # def self.expected_parent_dependencies(pods_to_build, buildable_items)
       #   expected_pod_list = []
       #   errors = []
 
@@ -225,7 +225,7 @@ module PodBuilder
         end
       end
 
-      def self.check_splitted_subspecs_are_static(all_buildable_items, options)
+      def self.check_splitted_subspecs_are_static(all_buildable_items)
         non_static_subspecs = all_buildable_items.select { |x| x.is_subspec && x.is_static == false }
         non_static_subspecs_names = non_static_subspecs.map(&:name)
 
@@ -236,7 +236,7 @@ module PodBuilder
         end
 
         warn_message = "The following pods `#{invalid_subspecs.join(" ")}` are non static frameworks which are being splitted over different targets. Beware that this is an unsafe setup as per https://github.com/CocoaPods/CocoaPods/issues/5708 and https://github.com/CocoaPods/CocoaPods/issues/5643\n\nYou can ignore this error by passing the `--allow-warnings` flag to the build command\n"
-        if options[:allow_warnings]
+        if OPTIONS[:allow_warnings]
           puts "\n\n⚠️  #{warn_message}".yellow
         else
           raise "\n\n🚨️  #{warn_message}".yellow
@@ -257,8 +257,8 @@ module PodBuilder
         end
       end
 
-      def self.check_not_building_development_pods(pods, options)
-        if (development_pods = pods.select { |x| x.is_development_pod }) && development_pods.count > 0 && (options[:allow_warnings].nil?  && Configuration.allow_building_development_pods == false)
+      def self.check_not_building_development_pods(pods)
+        if (development_pods = pods.select { |x| x.is_development_pod }) && development_pods.count > 0 && (OPTIONS[:allow_warnings].nil?  && Configuration.allow_building_development_pods == false)
           pod_names = development_pods.map(&:name).join(", ")
           raise "The following pods are in development mode: `#{pod_names}`, won't proceed building.\n\nYou can ignore this error by passing the `--allow-warnings` flag to the build command\n"
         end
@@ -273,7 +273,7 @@ module PodBuilder
         return buildable_subspecs - pods_to_build
       end
 
-      def self.sanity_checks(options)
+      def self.sanity_checks
         lines = File.read(PodBuilder::project_path("Podfile")).split("\n")
         stripped_lines = lines.map { |x| Podfile.strip_line(x) }.select { |x| !x.start_with?("#")}
 
@@ -281,7 +281,7 @@ module PodBuilder
 
         if !expected_stripped.all? { |x| stripped_lines.include?(x) }
           warn_message = "PodBuilder's post install actions missing from application Podfile!\n"
-          if options[:allow_warnings]
+          if OPTIONS[:allow_warnings]
             puts "\n\n⚠️  #{warn_message}".yellow
           else
             raise "\n\n🚨️  #{warn_message}".red
@@ -289,7 +289,7 @@ module PodBuilder
         end
       end
 
-      def self.resolve_pods_to_build(argument_pods, buildable_items, options)
+      def self.resolve_pods_to_build(argument_pods, buildable_items)
         pods_to_build = []
         
         # fns = [method(:expected_common_dependencies), method(:expected_parent_dependencies)]
@@ -299,16 +299,16 @@ module PodBuilder
         #     pods_to_build += other_subspecs(pods_to_build, buildable_items)
         #     tmp_buildable_items = buildable_items - pods_to_build
 
-        #     expected_pods, errors = fn.call(pods_to_build, tmp_buildable_items, options)
+        #     expected_pods, errors = fn.call(pods_to_build, tmp_buildable_items)
         #     if expected_pods.count > 0
-        #       if !options.has_key?(:auto_resolve_dependencies) && expected_pods.count > 0
+        #       if !OPTIONS.has_key?(:auto_resolve_dependencies) && expected_pods.count > 0
         #         raise "\n\n#{errors.join("\n")}".red
         #       else
         #         argument_pods = expected_pods.uniq
         #       end  
         #     end
             
-        #     if !options.has_key?(:auto_resolve_dependencies) || expected_pods.count == 0
+        #     if !OPTIONS.has_key?(:auto_resolve_dependencies) || expected_pods.count == 0
         #       break
         #     end
         #   end  

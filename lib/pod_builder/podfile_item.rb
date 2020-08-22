@@ -401,7 +401,7 @@ module PodBuilder
       if absolute_path 
         pod_path = PodBuilder::prebuiltpath
       else
-        pod_path = Pathname.new(PodBuilder::podspecs_path).relative_path_from(Pathname.new(PodBuilder::project_path)).to_s
+        pod_path = Pathname.new(PodBuilder::podspecspath).relative_path_from(Pathname.new(PodBuilder::project_path)).to_s
       end
 
       if Configuration.subspecs_to_split.include?(name)

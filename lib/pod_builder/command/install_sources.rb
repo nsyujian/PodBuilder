@@ -3,11 +3,11 @@ require 'pod_builder/core'
 module PodBuilder
   module Command
     class InstallSources
-      def self.call(options)
+      def self.call
         Configuration.check_inited
         PodBuilder::prepare_basepath
 
-        install_update_repo = options.fetch(:update_repos, true)
+        install_update_repo = OPTIONS.fetch(:update_repos, true)
         installer, analyzer = Analyze.installer_at(PodBuilder::basepath, install_update_repo)
         framework_items = Analyze.podfile_items(installer, analyzer).select { |x| !x.is_prebuilt }
         podspec_names = framework_items.map(&:podspec_name)
@@ -26,7 +26,7 @@ module PodBuilder
         Command::Clean::clean_sources()
 
         ARGV << PodBuilder::basepath("Sources")
-        Command::UpdateLldbInit::call(options)
+        Command::UpdateLldbInit::call
 
         puts "\n\n🎉 done!\n".green
         return 0

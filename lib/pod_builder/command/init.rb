@@ -3,7 +3,7 @@ require 'pod_builder/core'
 module PodBuilder
   module Command
     class Init
-      def self.call(options)
+      def self.call
         raise "\n\nAlready initialized\n".red if Configuration.exists
 
         xcworkspace = Dir.glob("*.xcworkspace")
@@ -12,15 +12,15 @@ module PodBuilder
 
         Configuration.project_name = File.basename(xcworkspace.first, ".*")
         
-        options[:prebuild_path] ||= Configuration.base_path
+        OPTIONS[:prebuild_path] ||= Configuration.base_path
 
-        if File.expand_path(options[:prebuild_path]) != options[:prebuild_path] # if not absolute
-          options[:prebuild_path] = File.expand_path(PodBuilder::project_path(options[:prebuild_path]))
+        if File.expand_path(OPTIONS[:prebuild_path]) != OPTIONS[:prebuild_path] # if not absolute
+          OPTIONS[:prebuild_path] = File.expand_path(PodBuilder::project_path(OPTIONS[:prebuild_path]))
         end
 
-        FileUtils.mkdir_p(options[:prebuild_path])
-        FileUtils.mkdir_p("#{options[:prebuild_path]}/.pod_builder")
-        FileUtils.touch("#{options[:prebuild_path]}/.pod_builder/pod_builder")
+        FileUtils.mkdir_p(OPTIONS[:prebuild_path])
+        FileUtils.mkdir_p("#{OPTIONS[:prebuild_path]}/.pod_builder")
+        FileUtils.touch("#{OPTIONS[:prebuild_path]}/.pod_builder/pod_builder")
 
         source_path_rel_path = "Sources"
         development_pods_config_rel_path = Configuration.dev_pods_configuration_filename
@@ -32,10 +32,10 @@ module PodBuilder
                        source_path_rel_path,
                        development_pods_config_rel_path]
         
-        File.write("#{options[:prebuild_path]}/.gitignore", git_ignores.join("\n"))
+        File.write("#{OPTIONS[:prebuild_path]}/.gitignore", git_ignores.join("\n"))
 
         project_podfile_path = PodBuilder::project_path("Podfile")
-        prebuilt_podfile_path = File.join(options[:prebuild_path], "Podfile")
+        prebuilt_podfile_path = File.join(OPTIONS[:prebuild_path], "Podfile")
         FileUtils.cp(project_podfile_path, prebuilt_podfile_path)
 
         podfile_content = File.read(prebuilt_podfile_path)
@@ -59,7 +59,7 @@ module PodBuilder
 
       def self.podfile_path_transform(path)
         use_absolute_paths = false
-        podfile_path = File.join(options[:prebuild_path], "Podfile")
+        podfile_path = File.join(OPTIONS[:prebuild_path], "Podfile")
         original_basepath = PodBuilder::project_path
 
         podfile_base_path = Pathname.new(File.dirname(podfile_path))

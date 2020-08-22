@@ -4,7 +4,7 @@ require 'digest'
 module PodBuilder
   module Command
     class UpdateLldbInit
-      def self.call(options)
+      def self.call
         Configuration.check_inited
         
         argument_pods = ARGV.dup

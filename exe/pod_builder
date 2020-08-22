@@ -367,7 +367,7 @@ Usage:
 
     subcommand[:opts].order!    
     subcommand[:call].each do |k|
-      if (ret = k.call(OPTIONS)) && ret == -1
+      if (ret = k.call) && ret == -1
         puts subcommand[:opts].help
       end
     end

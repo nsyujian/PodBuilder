@@ -3,7 +3,7 @@ require 'pod_builder/core'
 module PodBuilder
   module Command
     class Deintegrate
-      def self.call(options)
+      def self.call
         raise "\n\nPodBuilder not initialized!\n".red if !Configuration.exists
 
         prebuilt_podfile = Configuration.base_path("Podfile")
