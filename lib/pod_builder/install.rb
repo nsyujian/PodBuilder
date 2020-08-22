@@ -88,9 +88,9 @@ module PodBuilder
 
       copy_development_pods_source_code(podfile_items)
 
-      podfile_content = Podfile.update_path_entires(podfile_content, :podfile_path_transform)
-      podfile_content = Podfile.update_project_entries(podfile_content, :podfile_path_transform)
-      podfile_content = Podfile.update_require_entries(podfile_content, :podfile_path_transform)
+      podfile_content = Podfile.update_path_entires(podfile_content, Install.method(:podfile_path_transform))
+      podfile_content = Podfile.update_project_entries(podfile_content, Install.method(:podfile_path_transform))
+      podfile_content = Podfile.update_require_entries(podfile_content, Install.method(:podfile_path_transform))
       podfile_content = Podfile.prepare_podspec_entries(podfile_content)
       podfile_content = user_prebuilt_entries_for_unchanged_pods(podfile_content, podfile_items)
 

@@ -209,9 +209,9 @@ module PodBuilder
 
       podfile_content = prebuilt_lines.join
 
-      podfile_content = Podfile.update_path_entires(podfile_content, :podfile_path_transform)
-      podfile_content = Podfile.update_project_entries(podfile_content, :podfile_path_transform)
-      podfile_content = Podfile.update_require_entries(podfile_content, :podfile_path_transform)
+      podfile_content = Podfile.update_path_entires(podfile_content, Podfile.method(:podfile_path_transform))
+      podfile_content = Podfile.update_project_entries(podfile_content, Podfile.method(:podfile_path_transform))
+      podfile_content = Podfile.update_require_entries(podfile_content, Podfile.method(:podfile_path_transform))
 
       podfile_content = add_pre_install_actions(podfile_content)
       podfile_content = add_post_install_checks(podfile_content)
