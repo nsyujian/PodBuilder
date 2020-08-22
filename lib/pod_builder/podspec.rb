@@ -28,19 +28,23 @@ module PodBuilder
       indentation = "    " * slash_count
       spec_var = "p#{slash_count}"
 
+      rel_path = Pathname.new(PodBuilder::prebuiltpath).relative_path_from(Pathname.new(PodBuilder::podspecspath)).to_s
+
       if item.name == name
         vendored_frameworks = item.vendored_frameworks + ["#{item.module_name}.framework"]
         existing_vendored_frameworks = vendored_frameworks.select { |t| File.exist?(PodBuilder::prebuiltpath(t) || "") }
         existing_vendored_frameworks_basename = vendored_frameworks.map { |t| File.basename(t) }.select { |t| File.exist?(PodBuilder::prebuiltpath(t) || "") }
         vendored_frameworks = (existing_vendored_frameworks + existing_vendored_frameworks_basename).uniq
+        vendored_frameworks.map! { |t| File.join(rel_path, t) }
         
         vendored_libraries = item.vendored_libraries
         existing_vendored_libraries = vendored_libraries.map { |t| "#{item.module_name}/#{t}" }.select { |t| File.exist?(PodBuilder::prebuiltpath(t) || "") }
         existing_vendored_libraries_basename = vendored_libraries.map { |t| File.basename("#{item.module_name}/#{t}") }.select { |t| File.exist?(PodBuilder::prebuiltpath(t) || "") }
-        vendored_libraries = (existing_vendored_libraries + existing_vendored_libraries_basename).uniq
+        vendored_libraries = (existing_vendored_libraries + existing_vendored_libraries_basename).uniq        
   
         # .a are static libraries and should not be included again in the podspec to prevent duplicated symbols (in the app and in the prebuilt framework)
         vendored_libraries.select! { |t| !t.end_with?(".a") }
+        vendored_libraries.map! { |t| File.join(rel_path, t) }
   
         frameworks = all_buildable_items.select { |t| vendored_frameworks.include?("#{t.module_name}.framework") }.uniq
         static_frameworks = frameworks.select { |x| x.is_static }
