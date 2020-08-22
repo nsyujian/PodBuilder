@@ -86,7 +86,7 @@ module PodBuilder
       
       init_git(Configuration.build_path) # this is needed to be able to call safe_rm_rf
 
-      copy_development_pods_source_code(podfile_items)
+      podfile_content = copy_development_pods_source_code(podfile_content, podfile_items)
 
       podfile_content = Podfile.update_path_entires(podfile_content, Install.method(:podfile_path_transform))
       podfile_content = Podfile.update_project_entries(podfile_content, Install.method(:podfile_path_transform))
@@ -120,7 +120,7 @@ module PodBuilder
 
     private 
 
-    def self.copy_development_pods_source_code(podfile_items)
+    def self.copy_development_pods_source_code(podfile_content, podfile_items)
       # Development pods are normally built/integrated without moving files from their original paths.
       # It is important that CocoaPods compiles the files under Configuration.build_path in order that 
       # DWARF debug info reference to this constant path. Doing otherwise breaks the assumptions that 
@@ -136,7 +136,7 @@ module PodBuilder
           FileUtils.cp_r("#{PodBuilder::basepath(podfile_item.path)}/.", destination_path)
         end
 
-        podfile_content.gsub!("'#{podfile_item.path}'", "'#{destination_path}'")
+        return podfile_content.gsub("'#{podfile_item.path}'", "'#{destination_path}'")
       end
     end
 
