@@ -25,6 +25,7 @@ module PodBuilder
           system("#{bundler_prefix}pod install;")
         end
         
+        puts "\n\n🎉 done!\n".green
         return 0
       end
     end
