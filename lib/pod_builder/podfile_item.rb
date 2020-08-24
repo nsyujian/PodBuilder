@@ -399,7 +399,7 @@ module PodBuilder
 
     def prebuilt_entry(include_pb_entry = true, absolute_path = false)
       if absolute_path 
-        pod_path = PodBuilder::prebuiltpath
+        pod_path = PodBuilder::podspecspath
       else
         pod_path = Pathname.new(PodBuilder::podspecspath).relative_path_from(Pathname.new(PodBuilder::project_path)).to_s
       end

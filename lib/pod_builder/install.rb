@@ -153,8 +153,8 @@ module PodBuilder
       # Replace prebuilt entries in Podfile for Pods that have no changes in source code which will avoid rebuilding them
       items = podfile_items.group_by { |t| t.root_name }.map { |k, v| v.first } # Return one podfile_item per root_name
       items.each do |item|
-        framework_path = File.join(PodBuilder::prebuiltpath, "#{item.module_name}.framework")
-        podspec_path = File.join(PodBuilder::prebuiltpath, "#{item.root_name}.podspec")
+        framework_path = PodBuilder::prebuiltpath("#{item.module_name}.framework")
+        podspec_path = PodBuilder::podspecspath("#{item.root_name}.podspec")
         if (last_build_folder_hash = build_folder_hash_in_framework_plist_info(framework_path)) && File.exist?(podspec_path)
           if last_build_folder_hash == build_folder_hash(item)
             puts "No changes detected to '#{item.root_name}', will skip rebuild".blue
