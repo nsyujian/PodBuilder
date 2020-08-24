@@ -6,7 +6,7 @@ module PodBuilder
       def self.call
         raise "\n\nPodBuilder not initialized!\n".red if !Configuration.exists
 
-        prebuilt_podfile = Configuration.base_path("Podfile")
+        prebuilt_podfile = PodBuilder::basepath("Podfile")
         restored_podfile = PodBuilder::project_path("Podfile")
 
         FileUtils.cp(prebuilt_podfile, restored_podfile)
