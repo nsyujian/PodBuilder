@@ -556,34 +556,11 @@ module PodBuilder
       return podfile_lines.join
     end
 
-    def self.prepare_podspec_entries(podfile_content)      
-      regex = "(\s*pod\s*['|\"])(.*?)(['|\"])(.*?)(:podspec)(\s*=>\s*['|\"])(.*?)(['|\"])"
 
-      podspec_basepath = "#{Configuration.build_path}/podspecs"
-      FileUtils.mkdir_p(podspec_basepath)
 
-      podfile_lines = []
-      podfile_content.each_line do |line|
-        stripped_line = strip_line(line)
-        matches = line.match(/#{regex}/)
 
-        if matches&.size == 9 && !stripped_line.start_with?("#")
-          pod_name = matches[2]
-          path = matches[7]
 
-          raise "Podspec #{path} not found!" unless File.exist?(path)
-          podspec_content = File.read(path)
-          podspec_path = File.join(podspec_basepath, File.basename(path))
-          File.write(podspec_path, podspec_content)
-                    
-          updated_path_line = line.gsub(/#{regex}/, '\1\2\3\4\5\6' + podspec_path + '\8\9')
-          podfile_lines.push(updated_path_line)
-        else
-          podfile_lines.push(line)
-        end
-      end
 
-      return podfile_lines.join
     end
   end
 end
