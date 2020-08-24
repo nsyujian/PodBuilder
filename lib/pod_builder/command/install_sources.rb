@@ -26,7 +26,6 @@ module PodBuilder
         Command::Clean::clean_sources()
 
         ARGV << PodBuilder::basepath("Sources")
-        Command::UpdateLldbInit::call
 
         puts "\n\n🎉 done!\n".green
         return 0
