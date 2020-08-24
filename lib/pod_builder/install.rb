@@ -137,8 +137,10 @@ module PodBuilder
           FileUtils.cp_r("#{PodBuilder::basepath(podfile_item.path)}/.", destination_path)
         end
 
-        return podfile_content.gsub("'#{podfile_item.path}'", "'#{destination_path}'")
+        podfile_content.gsub!("'#{podfile_item.path}'", "'#{destination_path}'")
       end
+
+      return podfile_content
     end
 
     def self.use_prebuilt_entries_for_unchanged_pods(podfile_path, podfile_items)
