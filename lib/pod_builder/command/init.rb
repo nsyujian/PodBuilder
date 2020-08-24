@@ -45,6 +45,8 @@ module PodBuilder
         podfile_content = Podfile.update_project_entries(podfile_content, Init.method(:podfile_path_transform))
         podfile_content = Podfile.update_require_entries(podfile_content, Init.method(:podfile_path_transform))
 
+        podfile_content = Podfile.prepare_for_react_native(podfile_content)
+
         File.write(prebuilt_podfile_path, podfile_content)
 
         Configuration.write

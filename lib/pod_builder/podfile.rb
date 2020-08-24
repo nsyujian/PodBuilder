@@ -556,11 +556,103 @@ module PodBuilder
       return podfile_lines.join
     end
 
+    def self.prepare_for_react_native_rn_pods_file(podfile_content)
+      rn_regex = "((.|\n)*)((.*)use_react_native!(.*))((.|\n)*)"
+      matches = podfile_content.match(/#{rn_regex}/)
 
+      unless matches&.size == 8
+        return podfile_content
+      end
 
+      pre_use_react_native = matches[1]
+      use_react_native_indendation = matches[2]
+      use_react_native = matches[3]
+      post_use_react_native = matches[6]
 
+      rel_path = Pathname.new(Pathname.new(PodBuilder::project_path)).relative_path_from(OPTIONS[:prebuild_path]).to_s
 
+      config_line = "#{use_react_native_indendation} use_react_native!(:path => '#{rel_path}/../node_modules/react-native')"
+      podfile_content = "#{pre_use_react_native}\n#{config_line}\n #{use_react_native_indendation}# #{use_react_native}#{post_use_react_native}"     
 
+      return podfile_content
+    end
+
+    def self.prepare_for_react_native_native_modules_file(podfile_content)
+      rn_regex = "((.|\n)*)((.*)require_relative '((.*)node_modules\/@react-native-community\/cli-platform-ios\/native_modules)')((.|\n)*)"
+      matches = podfile_content.match(/#{rn_regex}/)
+
+      unless matches&.size == 9 && podfile_content.include?("use_react_native!") 
+        return podfile_content
+      end
+
+      pre_require = matches[1]
+      require_indentation = matches[2]
+      require_line = matches[3]
+      require_path = matches[5]
+      require_relpath = matches[6]
+      post_require = matches[7]
+
+      podfile_content = pre_require
+      podfile_content += "#{require_indentation}# #{require_line}\n#{require_indentation}require_relative '#{File.basename(require_path)}'"
+      podfile_content += post_require
+
+      # Fix native_module.rb paths
+      native_module_path = File.expand_path(PodBuilder::basepath(require_path + ".rb"))
+      raise "#{native_module_path} not found" unless File.exist?(native_module_path)
+
+      pb_native_module_path = PodBuilder::basepath(File.basename(native_module_path))
+      FileUtils.cp(native_module_path, pb_native_module_path)
+
+      content = File.read(pb_native_module_path)
+
+      marker = 'project_root = Pathname.new(config["project"]["ios"]["sourceDir"])'
+      raise "project_root = Pathname not found" unless content.include?(marker)
+
+      content.gsub!(marker, "project_root = PodBuilder::basepath")
+
+      Configuration.build_using_repo_paths = true
+
+      return podfile_content
+    end
+
+    def self.prepare_for_react_native(podfile_content)
+      rn_regex = "((.|\n)*)((.*)require_relative '((.*)node_modules\/@react-native-community\/cli-platform-ios\/native_modules)')((.|\n)*)"
+      matches = podfile_content.match(/#{rn_regex}/)
+
+      unless matches&.size == 9 && podfile_content.include?("use_native_modules!")
+        return podfile_content
+      end
+      
+      puts "React native project detected".blue
+      raise "These projects are still unsupported"
+
+      pre_require = matches[1]
+      require_indentation = matches[2]
+      require_line = matches[3]
+      require_path = matches[5]
+      require_relpath = matches[6]
+      post_require = matches[7]
+
+      podfile_content = pre_require
+      podfile_content += "#{require_indentation}# #{require_line}\n#{require_indentation}require_relative 'native_modules'"
+      podfile_content += post_require
+
+      native_module_path = File.expand_path(PodBuilder::basepath(require_path + ".rb"))
+      raise "native_module.rb not found" unless File.exist?(native_module_path)
+
+      pb_native_module_path = PodBuilder::basepath(File.basename(native_module_path))
+      FileUtils.cp(native_module_path, pb_native_module_path)
+
+      content = File.read(pb_native_module_path)
+
+      marker = 'project_root = Pathname.new(config["project"]["ios"]["sourceDir"])'
+      raise "project_root = Pathname not found" unless content.include?(marker)
+
+      content.gsub!(marker, "project_root = PodBuilder::basepath")
+
+      File.write(pb_native_module_path, content)
+
+      return podfile_content
     end
   end
 end
