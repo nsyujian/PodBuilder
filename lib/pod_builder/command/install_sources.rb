@@ -23,7 +23,7 @@ module PodBuilder
           end
         end
 
-        Command::Clean::clean_sources()
+        Command::Clean::clean_sources(podspec_names)
 
         ARGV << PodBuilder::basepath("Sources")
 
