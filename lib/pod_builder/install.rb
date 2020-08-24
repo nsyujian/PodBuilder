@@ -91,13 +91,15 @@ module PodBuilder
       podfile_content = Podfile.update_path_entires(podfile_content, Install.method(:podfile_path_transform))
       podfile_content = Podfile.update_project_entries(podfile_content, Install.method(:podfile_path_transform))
       podfile_content = Podfile.update_require_entries(podfile_content, Install.method(:podfile_path_transform))
-      podfile_content = user_prebuilt_entries_for_unchanged_pods(podfile_content, podfile_items)
 
-      File.write(File.join(Configuration.build_path, "Podfile"), podfile_content)
+      podfile_path = File.join(Configuration.build_path, "Podfile")
+      File.write(podfile_path, podfile_content)
 
       begin  
         lock_file = "#{Configuration.build_path}/pod_builder.lock"
         FileUtils.touch(lock_file)
+
+        use_prebuilt_entries_for_unchanged_pods(podfile_path, podfile_items)
   
         install
 
@@ -139,12 +141,14 @@ module PodBuilder
       end
     end
 
-    def self.user_prebuilt_entries_for_unchanged_pods(podfile_content, podfile_items)
+    def self.use_prebuilt_entries_for_unchanged_pods(podfile_path, podfile_items)
       if OPTIONS.has_key?(:force_rebuild)
-        return podfile_content
+        return
       end
 
       download # Copy files under #{Configuration.build_path}/Pods so that we can determine build folder hashes
+
+      podfile_content = File.read(podfile_path)
 
       # Replace prebuilt entries in Podfile for Pods that have no changes in source code which will avoid rebuilding them
       items = podfile_items.group_by { |t| t.root_name }.map { |k, v| v.first } # Return one podfile_item per root_name
@@ -164,7 +168,7 @@ module PodBuilder
         end
       end
 
-      return podfile_content
+      File.write(podfile_path, podfile_content)
     end
 
     def self.install
