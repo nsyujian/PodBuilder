@@ -138,6 +138,8 @@ module PodBuilder
     end
 
     def self.generate_podspec_from(all_buildable_items, platform)
+      FileUtils.mkdir_p(PodBuilder::podspecspath)
+      
       specs = Dir.glob(PodBuilder::podspecspath("*.podspec"))
       specs.each do |s| 
         FileUtils.rm(s)
