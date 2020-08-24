@@ -35,7 +35,7 @@ module PodBuilder
 
         podfile_content = podfile_lines.join
         
-        podfile_content = Podfile.update_path_entires(podfile_content, Deintegrate.method(:podfile_path_transform))
+        podfile_content = Podfile.update_path_entries(podfile_content, Deintegrate.method(:podfile_path_transform))
         podfile_content = Podfile.update_project_entries(podfile_content, Deintegrate.method(:podfile_path_transform))
         podfile_content = Podfile.update_require_entries(podfile_content, Deintegrate.method(:podfile_path_transform))
 

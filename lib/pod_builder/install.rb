@@ -88,7 +88,7 @@ module PodBuilder
 
       podfile_content = copy_development_pods_source_code(podfile_content, podfile_items)
 
-      podfile_content = Podfile.update_path_entires(podfile_content, Install.method(:podfile_path_transform))
+      podfile_content = Podfile.update_path_entries(podfile_content, Install.method(:podfile_path_transform))
       podfile_content = Podfile.update_project_entries(podfile_content, Install.method(:podfile_path_transform))
       podfile_content = Podfile.update_require_entries(podfile_content, Install.method(:podfile_path_transform))
 
