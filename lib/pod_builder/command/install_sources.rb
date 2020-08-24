@@ -34,6 +34,10 @@ module PodBuilder
       private
 
       def self.update_repo(spec)
+        if spec.path != nil || spec.podspec_path != nil
+          return
+        end
+
         dest_path = PodBuilder::basepath("Sources")
         FileUtils.mkdir_p(dest_path)
 
