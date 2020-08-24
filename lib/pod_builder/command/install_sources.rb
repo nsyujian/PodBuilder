@@ -58,13 +58,13 @@ module PodBuilder
 
       def self.git_hard_checkout_cmd(spec)
         prefix = "git fetch --all --tags --prune; git reset --hard"
-        if @tag
+        if spec.tag
           return "#{prefix} tags/#{spec.tag}"
         end
-        if @commit
+        if spec.commit
           return "#{prefix} #{spec.commit}"
         end
-        if @branch
+        if spec.branch
           return "#{prefix} origin/#{spec.branch}"
         end
   
