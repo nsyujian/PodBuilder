@@ -188,7 +188,7 @@ module PodBuilder
             non_explicit_dependencies.each do |dep|
               dep_item = all_buildable_items.detect { |x| x.name == dep.name }
 
-              if Podspec.include?(dep_item.root_name)
+              if Podspec.include?(dep_item.root_name) && !dep_item.is_prebuilt 
                 pod_name = dep_item.prebuilt_entry(false)
                 pod_name.gsub!(dep.name, dep.root_name)
                 prebuilt_lines.push("#{line.detect_indentation}#{pod_name}#{marker}\n")
@@ -197,7 +197,7 @@ module PodBuilder
               explicit_deps.push(dep)
             end       
 
-            if Podspec.include?(podfile_item.root_name)
+            if Podspec.include?(podfile_item.root_name) && !podfile_item.is_prebuilt 
               prebuilt_lines.push("#{line.detect_indentation}#{podfile_item.prebuilt_entry}\n")
               next
             end

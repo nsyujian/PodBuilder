@@ -270,6 +270,9 @@ module PodBuilder
 
     def self.copy_frameworks(podfile_items)
       Dir.glob(PodBuilder::buildpath_prebuiltpath("*.framework")) do |framework_path|
+        if (item = podfile_items.detect { |t| t.module_name == File.basename(framework_path, ".*") }) && item.is_prebuilt
+          next
+        end
         framework_rel_path = rel_path(framework_path, podfile_items)
 
         destination_path = PodBuilder::prebuiltpath(framework_rel_path)

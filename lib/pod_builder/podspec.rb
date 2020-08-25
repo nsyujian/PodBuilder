@@ -146,6 +146,9 @@ module PodBuilder
       end
 
       all_buildable_items.each do |item|  
+        if item.is_prebuilt
+          next
+        end
         if item.name != item.root_name
           if all_buildable_items.map(&:name).include?(item.root_name)
             next # will process root spec, skip subspecs
