@@ -3,26 +3,21 @@ require 'pod_builder/core'
 
 module PodBuilder
   class Podfile
-    def self.remove_target_support_duplicate_entries
-      puts "[PodBuilder] Removing target support duplicated entries".yellow
-      
-      Configuration.load
-      
-      # Frameworks and resources
-      find_xcodeproj_targets.map(&:name).each do |target|
-        remove_duplicate_entries("Pods/Target Support Files/Pods-#{target}/Pods-#{target}-frameworks.sh")
-        remove_duplicate_entries("Pods/Target Support Files/Pods-#{target}/Pods-#{target}-resources.sh")
-      end
-    end
-
-    def self.check_target_support_resource_collisions
-      puts "[PodBuilder] Checking target support resource collisions".yellow
-
+    def self.pod_builder_post_process
       Configuration.load
 
       targets = find_xcodeproj_targets
+      target_names = targets.map(&:name)
 
-      targets.map(&:name).each do |target|
+      puts "[PodBuilder] Removing target support duplicated entries".yellow
+      # Frameworks and resources
+      target_names.each do |target|
+        remove_duplicate_entries("Pods/Target Support Files/Pods-#{target}/Pods-#{target}-frameworks.sh")
+        remove_duplicate_entries("Pods/Target Support Files/Pods-#{target}/Pods-#{target}-resources.sh")
+      end
+
+      puts "[PodBuilder] Checking target support resource collisions".yellow
+      target_names.each do |target|
         check_for_colliding_resources("Pods/Target Support Files/Pods-#{target}/Pods-#{target}-resources.sh", target, targets)
       end
     end

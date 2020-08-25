@@ -45,7 +45,5 @@ end
 
 post_install do |installer|
   require 'pod_builder/podfile/post_actions'
-  PodBuilder::Podfile::remove_target_support_duplicate_entries
-  PodBuilder::Podfile::check_target_support_resource_collisions
-   
+  PodBuilder::Podfile::pod_builder_post_process   
 end
