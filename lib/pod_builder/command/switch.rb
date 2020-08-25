@@ -23,6 +23,42 @@ module PodBuilder
 
           pod_names_to_switch.push(pod_name_to_switch)
         end
+
+        dep_pod_names_to_switch = []
+        if OPTIONS[:switch_all] == true
+          pod_names_to_switch.each do |pod|
+            podspec_path = PodBuilder::podspecspath("#{pod}.podspec")
+            unless File.exist?(podspec_path)
+              next
+            end
+
+            podspec_content = File.read(podspec_path)
+
+            regex = "p\\d\\.dependency '(.*)'"
+
+            podspec_content.each_line do |line|
+              matches = line.match(/#{regex}/)
+      
+              if matches&.size == 2
+                dep_pod_names_to_switch.push(matches[1].split("/").first)
+              end
+            end
+          end
+
+          dep_pod_names_to_switch.uniq!
+          dep_pod_names_to_switch.reverse.each do |dep_name|
+            if File.exist?(PodBuilder::podspecspath("#{dep_name}.podspec"))
+              if pod = Podfile::resolve_pod_names_from_podfile([dep_name]).first
+                pod_names_to_switch.push(pod)
+                next
+              end    
+            end
+            
+            dep_pod_names_to_switch.delete(dep_name)
+          end
+          pod_names_to_switch = pod_names_to_switch.map { |t| t.split("/").first }.uniq
+          dep_pod_names_to_switch.reject { |t| pod_names_to_switch.include?(t) } 
+        end
         
         pod_names_to_switch.each do |pod_name_to_switch|
           development_path = ""
@@ -30,7 +66,7 @@ module PodBuilder
 
           case OPTIONS[:switch_mode]
           when "development"
-            development_path = find_podspec(pod_name_to_switch)          
+            development_path = find_podspec(pod_name_to_switch)               
           when "prebuilt"
             podfile_path = PodBuilder::basepath("Podfile.restore")
             content = File.read(podfile_path)
@@ -60,6 +96,14 @@ module PodBuilder
             raise "\n\n'#{pod_name_to_switch}' not found in #{podfile_path}" if default_entries.keys.count == 0
           end
 
+          if development_path.nil? 
+            if dep_pod_names_to_switch.include?(pod_name_to_switch)
+              next
+            else
+              raise "\n\nCouln't find `#{pod_name_to_switch}` sources in the following specified development pod paths:\n#{Configuration.development_pods_paths.join("\n")}\n".red
+            end
+          end
+
           podfile_path = PodBuilder::project_path("Podfile")
           content = File.read(podfile_path)
           
@@ -77,7 +121,7 @@ module PodBuilder
                 case OPTIONS[:switch_mode]
                 when "prebuilt"
                   indentation = line.split("pod '").first
-                  rel_path = Pathname.new(PodBuilder::prebuiltpath).relative_path_from(Pathname.new(PodBuilder::project_path)).to_s
+                  rel_path = Pathname.new(PodBuilder::podspecspath).relative_path_from(Pathname.new(PodBuilder::project_path)).to_s
                   prebuilt_line = "#{indentation}pod '#{matches[1]}', :path => '#{rel_path}'\n"
                   if line.include?("# pb<") && marker = line.split("# pb<").last
                     prebuilt_line = prebuilt_line.chomp("\n") + " # pb<#{marker}"
@@ -142,10 +186,6 @@ module PodBuilder
             podspec_path = Pathname.new(podspec.first).dirname.to_s
             break
           end
-        end
-
-        if podspec_path.nil?
-          raise "\n\nCouln't find `#{podname}` sources in the following specified development pod paths:\n#{Configuration.development_pods_paths.join("\n")}\n".red
         end
 
         return podspec_path

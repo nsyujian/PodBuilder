@@ -310,6 +310,9 @@ Options:
         opts.on("-s", "--default", "Default version specified in PodBuilder-Podfile") do |o|
           OPTIONS[:switch_mode] = "default"
         end
+        opts.on("-a", "--all", "Include dependencies") do |o|
+          OPTIONS[:switch_all] = true
+        end
       end,
       :call => [        
         PodBuilder::Command::Switch
