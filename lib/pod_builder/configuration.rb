@@ -257,6 +257,11 @@ module PodBuilder
       config["subspecs_to_split"] = Configuration.subspecs_to_split
       config["lfs_update_gitattributes"] = Configuration.lfs_update_gitattributes
       config["lfs_include_pods_folder"] = Configuration.lfs_include_pods_folder
+      config["restore_enabled"] = Configuration.restore_enabled
+      config["allow_building_development_pods"] = Configuration.allow_building_development_pods
+      config["use_bundler"] = Configuration.use_bundler
+      config["deterministic_build"] = Configuration.deterministic_build
+      config["build_for_apple_silicon"] = Configuration.build_for_apple_silicon
       config["build_using_repo_paths"] = Configuration.build_using_repo_paths
       
       File.write(config_path, JSON.pretty_generate(config))
