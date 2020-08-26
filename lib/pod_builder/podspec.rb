@@ -13,10 +13,6 @@ module PodBuilder
       platform = analyzer.instance_variable_get("@result").targets.first.platform
       generate_podspec_from(all_buildable_items, platform)
     end
-
-    def self.include?(pod_name)
-      return File.exist?(PodBuilder::podspecspath("#{pod_name}.podspec"))
-    end
     
     private
 
@@ -27,8 +23,6 @@ module PodBuilder
       slash_count = name.count("/") + 1
       indentation = "    " * slash_count
       spec_var = "p#{slash_count}"
-
-      rel_path = Pathname.new(PodBuilder::prebuiltpath).relative_path_from(Pathname.new(PodBuilder::podspecspath)).to_s
 
       if item.name == name
         vendored_frameworks = item.vendored_frameworks + ["#{item.module_name}.framework"]
@@ -138,11 +132,11 @@ module PodBuilder
     end
 
     def self.generate_podspec_from(all_buildable_items, platform)
-      FileUtils.mkdir_p(PodBuilder::podspecspath)
-      
-      specs = Dir.glob(PodBuilder::podspecspath("*.podspec"))
-      specs.each do |s| 
-        FileUtils.rm(s)
+      prebuilt_podspec_path = all_buildable_items.map(&:prebuilt_podspec_path)
+      prebuilt_podspec_path.each do |path|
+        if File.exist?(path)
+          FileUtils.rm(path)
+        end
       end
 
       all_buildable_items.each do |item|  

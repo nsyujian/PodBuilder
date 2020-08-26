@@ -27,7 +27,7 @@ module PodBuilder
         dep_pod_names_to_switch = []
         if OPTIONS[:switch_all] == true
           pod_names_to_switch.each do |pod|
-            podspec_path = PodBuilder::podspecspath("#{pod}.podspec")
+            podspec_path = PodBuilder::prebuiltpath("#{pod}/#{pod}.podspec")
             unless File.exist?(podspec_path)
               next
             end
@@ -47,7 +47,8 @@ module PodBuilder
 
           dep_pod_names_to_switch.uniq!
           dep_pod_names_to_switch.reverse.each do |dep_name|
-            if File.exist?(PodBuilder::podspecspath("#{dep_name}.podspec"))
+            podspec_path = PodBuilder::prebuiltpath("#{dep_name}/#{dep_name}.podspec")
+            if File.exist?(podspec_path)
               if pod = Podfile::resolve_pod_names_from_podfile([dep_name]).first
                 pod_names_to_switch.push(pod)
                 next
@@ -121,7 +122,8 @@ module PodBuilder
                 case OPTIONS[:switch_mode]
                 when "prebuilt"
                   indentation = line.split("pod '").first
-                  rel_path = Pathname.new(PodBuilder::podspecspath).relative_path_from(Pathname.new(PodBuilder::project_path)).to_s
+                  podspec_path = File.dirname(PodBuilder::prebuiltpath("#{pod_name_to_switch}/#{pod_name_to_switch}.podspec"))
+                  rel_path = Pathname.new(podspec_path).relative_path_from(Pathname.new(PodBuilder::project_path)).to_s
                   prebuilt_line = "#{indentation}pod '#{matches[1]}', :path => '#{rel_path}'\n"
                   if line.include?("# pb<") && marker = line.split("# pb<").last
                     prebuilt_line = prebuilt_line.chomp("\n") + " # pb<#{marker}"

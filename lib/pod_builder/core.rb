@@ -66,19 +66,6 @@ module PodBuilder
     return path
   end
 
-  def self.podspecspath(child = "")
-    if child.nil?
-      return nil
-    end
-
-    path = basepath("Podspecs")
-    if child.length > 0
-      path += "/#{child}"
-    end
-
-    return path
-  end
-
   def self.buildpath_prebuiltpath(child = "")
     if child.nil?
       return nil
