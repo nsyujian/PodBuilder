@@ -15,6 +15,9 @@ require 'pod_builder/licenses'
 require 'core_ext/string'
 
 module PodBuilder  
+  @@xcodeproj_path = nil
+  @@xcodeworkspace_path = nil
+
   def self.safe_rm_rf(path)
     unless File.exist?(path)
       return
@@ -109,6 +112,9 @@ module PodBuilder
   end
 
   def self.find_xcodeproj
+    unless @@xcodeproj_path.nil?
+      return @@xcodeproj_path
+    end
     project_name = File.basename(find_xcodeworkspace, ".*")
 
     xcodeprojects = Dir.glob("#{home}/**/#{project_name}.xcodeproj").select { |x| 
@@ -118,10 +124,15 @@ module PodBuilder
     raise "xcodeproj not found!".red if xcodeprojects.count == 0
     raise "Found multiple xcodeproj:\n#{xcodeprojects.join("\n")}".red if xcodeprojects.count > 1
 
-    return xcodeprojects.first
+    @@xcodeproj_path = xcodeprojects.first
+    return @@xcodeproj_path
   end
 
   def self.find_xcodeworkspace
+    unless @@xcodeworkspace_path.nil?
+      return @@xcodeworkspace_path
+    end
+
     xcworkspaces = Dir.glob("#{home}/**/#{Configuration.project_name}*.xcworkspace").select { |x| 
       folder_in_home = x.gsub(home, "")
       !folder_in_home.include?("/Pods/") && !x.include?(PodBuilder::basepath("Sources")) && !x.include?(basepath) && !x.include?(".xcodeproj/")
@@ -129,7 +140,8 @@ module PodBuilder
     raise "xcworkspace not found!".red if xcworkspaces.count == 0
     raise "Found multiple xcworkspaces:\n#{xcworkspaces.join("\n")}".red if xcworkspaces.count > 1
 
-    return xcworkspaces.first
+    @@xcodeworkspace_path = xcworkspaces.first
+    return @@xcodeworkspace_path
   end
 
   def self.prepare_basepath
