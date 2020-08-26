@@ -26,6 +26,7 @@ module PodBuilder
     MIN_LFS_SIZE_KB = 256.freeze
     DEFAULT_PLATFORMS = ["iphoneos", "iphonesimulator", "appletvos", "appletvsimulator"].freeze
     DEFAULT_BUILD_FOR_APPLE_SILICON = false
+    DEFAULT_BUILD_USING_REPO_PATHS = false
     
     private_constant :DEFAULT_BUILD_SETTINGS
     private_constant :DEFAULT_BUILD_SYSTEM
@@ -62,6 +63,7 @@ module PodBuilder
       attr_accessor :deterministic_build
       attr_accessor :supported_platforms
       attr_accessor :build_for_apple_silicon
+      attr_accessor :build_using_repo_paths
     end
     
     @allow_building_development_pods = false
@@ -95,6 +97,7 @@ module PodBuilder
 
     @supported_platforms = DEFAULT_PLATFORMS
     @build_for_apple_silicon = DEFAULT_BUILD_FOR_APPLE_SILICON
+    @build_using_repo_paths = DEFAULT_BUILD_USING_REPO_PATHS
     
     def self.check_inited
       raise "\n\nNot inited, run `pod_builder init`\n".red if podbuilder_path.nil?
@@ -208,6 +211,11 @@ module PodBuilder
             Configuration.build_for_apple_silicon = value
           end
         end
+        if value = json["build_using_repo_paths"]
+          if [TrueClass, FalseClass].include?(value.class)
+            Configuration.build_using_repo_paths = value
+          end
+        end
         
         Configuration.build_settings.freeze
 
@@ -249,6 +257,7 @@ module PodBuilder
       config["subspecs_to_split"] = Configuration.subspecs_to_split
       config["lfs_update_gitattributes"] = Configuration.lfs_update_gitattributes
       config["lfs_include_pods_folder"] = Configuration.lfs_include_pods_folder
+      config["build_using_repo_paths"] = Configuration.build_using_repo_paths
       
       File.write(config_path, JSON.pretty_generate(config))
     end

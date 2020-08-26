@@ -122,6 +122,10 @@ module PodBuilder
     private 
 
     def self.copy_development_pods_source_code(podfile_content, podfile_items)
+      if Configuration.build_using_repo_paths
+        return podfile_content
+      end
+
       # Development pods are normally built/integrated without moving files from their original paths.
       # It is important that CocoaPods compiles the files under Configuration.build_path in order that 
       # DWARF debug info reference to this constant path. Doing otherwise breaks the assumptions that 
@@ -383,19 +387,23 @@ module PodBuilder
     end
     
     def self.podfile_path_transform(path)
-      use_absolute_paths = true
-      podfile_path = File.join(Configuration.build_path, "Podfile")
-      original_basepath = PodBuilder::basepath
-
-      podfile_base_path = Pathname.new(File.dirname(podfile_path))
-
-      original_path = Pathname.new(File.join(original_basepath, path))
-      replace_path = original_path.relative_path_from(podfile_base_path)
-      if use_absolute_paths
-        replace_path = replace_path.expand_path(podfile_base_path)
+      if Configuration.build_using_repo_paths
+        return File.expand_path(PodBuilder::basepath(path))
+      else
+        use_absolute_paths = true
+        podfile_path = File.join(Configuration.build_path, "Podfile")
+        original_basepath = PodBuilder::basepath
+  
+        podfile_base_path = Pathname.new(File.dirname(podfile_path))
+  
+        original_path = Pathname.new(File.join(original_basepath, path))
+        replace_path = original_path.relative_path_from(podfile_base_path)
+        if use_absolute_paths
+          replace_path = replace_path.expand_path(podfile_base_path)
+        end
+  
+        return replace_path
       end
-
-      return replace_path
     end  
   end
 end

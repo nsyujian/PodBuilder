@@ -616,41 +616,18 @@ module PodBuilder
     end
 
     def self.prepare_for_react_native(podfile_content)
-      rn_regex = "((.|\n)*)((.*)require_relative '((.*)node_modules\/@react-native-community\/cli-platform-ios\/native_modules)')((.|\n)*)"
-      matches = podfile_content.match(/#{rn_regex}/)
-
-      unless matches&.size == 9 && podfile_content.include?("use_native_modules!")
-        return podfile_content
+      original_podfile_content = podfile_content.dup
+      content = prepare_for_react_native_rn_pods_file(podfile_content)
+      if content == podfile_content
+        return original_podfile_content
       end
-      
-      puts "React native project detected".blue
-      raise "These projects are still unsupported"
+      podfile_content = content
+      content = prepare_for_react_native_native_modules_file(podfile_content)
+      if content == podfile_content
+        return original_podfile_content
+      end
 
-      pre_require = matches[1]
-      require_indentation = matches[2]
-      require_line = matches[3]
-      require_path = matches[5]
-      require_relpath = matches[6]
-      post_require = matches[7]
-
-      podfile_content = pre_require
-      podfile_content += "#{require_indentation}# #{require_line}\n#{require_indentation}require_relative 'native_modules'"
-      podfile_content += post_require
-
-      native_module_path = File.expand_path(PodBuilder::basepath(require_path + ".rb"))
-      raise "native_module.rb not found" unless File.exist?(native_module_path)
-
-      pb_native_module_path = PodBuilder::basepath(File.basename(native_module_path))
-      FileUtils.cp(native_module_path, pb_native_module_path)
-
-      content = File.read(pb_native_module_path)
-
-      marker = 'project_root = Pathname.new(config["project"]["ios"]["sourceDir"])'
-      raise "project_root = Pathname not found" unless content.include?(marker)
-
-      content.gsub!(marker, "project_root = PodBuilder::basepath")
-
-      File.write(pb_native_module_path, content)
+      Configuration.build_using_repo_paths = true
 
       return podfile_content
     end
