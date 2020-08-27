@@ -331,7 +331,7 @@ module PodBuilder
           existing_framework_name = File.basename(existing_framework)
           if !expected_frameworks.include?(existing_framework_name)
             puts "Cleanining up `#{existing_framework_name}`, no longer found among dependencies".blue
-            FileUtils.rm_rf(existing_framework)
+            PodBuilder::safe_rm_rf(existing_framework)
           end
         end
 
@@ -340,7 +340,7 @@ module PodBuilder
           existing_dsym_name = File.basename(existing_dsym)
           if !expected_frameworks.include?(existing_dsym_name.gsub(".dSYM", ""))
             puts "Cleanining up `#{existing_dsym_name}`, no longer found among dependencies".blue
-            FileUtils.rm_rf(existing_dsym)
+            PodBuilder::safe_rm_rf(existing_dsym)
           end
         end
       end
