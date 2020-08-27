@@ -257,7 +257,7 @@ module PodBuilder
           end
 
           destination_path = PodBuilder::prebuiltpath(item.root_name)
-          PodBuilder::safe_rm_rf(destination_path)
+          PodBuilder::safe_rm_rf("#{destination_path}/#{File.basename(framework_path)}")
           FileUtils.mkdir_p(destination_path)
           FileUtils.cp_r(framework_path, destination_path)
         else
