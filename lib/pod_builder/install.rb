@@ -283,7 +283,7 @@ module PodBuilder
           FileUtils.mkdir_p(destination_path)
           FileUtils.cp_r(framework_path, destination_path)  
         else
-          raise "Unassocaited framework #{framework_path}"
+          raise "Unassociated framework #{framework_path}"
         end
       end
     end
