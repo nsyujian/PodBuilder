@@ -332,6 +332,19 @@ module PodBuilder
           if !expected_frameworks.include?(existing_framework_name)
             puts "Cleanining up `#{existing_framework_name}`, no longer found among dependencies".blue
             PodBuilder::safe_rm_rf(existing_framework)
+
+            framework_dir = File.dirname(existing_framework)
+            podspecs = Dir.glob("#{framework_dir}/*.podspec")
+            podspecs.each { |t| FileUtils.rm(t) }
+          end
+        end
+
+        # Remove empty folders ignoring hidden files
+        folders = Dir.glob(PodBuilder::prebuiltpath("*")).select { |t| File.directory?(t) }
+        folders.each do |folder|
+          if Dir.glob("#{folder}/*").count == 0 
+            puts "Cleanining up empty folder `#{folder}`".blue
+            PodBuilder::safe_rm_rf(folder)
           end
         end
 
