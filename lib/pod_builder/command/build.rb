@@ -325,7 +325,7 @@ module PodBuilder
         expected_frameworks += buildable_items.map { |x| x.vendored_frameworks }.flatten.map { |x| File.basename(x) }
         expected_frameworks.uniq!
 
-        existing_frameworks = Dir.glob(PodBuilder::prebuiltpath("*.framework"))
+        existing_frameworks = Dir.glob(PodBuilder::prebuiltpath("**/*.framework"))
 
         existing_frameworks.each do |existing_framework|
           existing_framework_name = File.basename(existing_framework)

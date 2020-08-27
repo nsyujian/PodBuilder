@@ -439,9 +439,9 @@ module PodBuilder
     end
 
     def vendored_framework_path
-      if File.exist?(PodBuilder::prebuiltpath(vendored_subspec_framework_name))
+      if File.exist?(PodBuilder::prebuiltpath("#{root_name}/#{vendored_subspec_framework_name}"))
         return vendored_subspec_framework_name
-      elsif File.exist?(PodBuilder::prebuiltpath(vendored_spec_framework_name))
+      elsif File.exist?(PodBuilder::prebuiltpath("#{root_name}/#{vendored_spec_framework_name}"))
         return vendored_spec_framework_name
       end
       

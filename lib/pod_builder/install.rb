@@ -159,8 +159,8 @@ module PodBuilder
       # Replace prebuilt entries in Podfile for Pods that have no changes in source code which will avoid rebuilding them
       items = podfile_items.group_by { |t| t.root_name }.map { |k, v| v.first } # Return one podfile_item per root_name
       items.each do |item|
-        framework_path = PodBuilder::prebuiltpath("#{item.module_name}.framework")
-        podspec_path = item.prebuilt_podspec_path(absolute_path = true)
+        framework_path = PodBuilder::prebuiltpath("#{item.root_name}/#{item.module_name}.framework")
+        podspec_path = item.prebuilt_podspec_path
         if (last_build_folder_hash = build_folder_hash_in_framework_plist_info(framework_path)) && File.exist?(podspec_path)
           if last_build_folder_hash == build_folder_hash(item)
             puts "No changes detected to '#{item.root_name}', will skip rebuild".blue
@@ -261,7 +261,7 @@ module PodBuilder
     end
 
     def self.cleanup_frameworks(podfile_items)
-      Dir.glob(PodBuilder::buildpath_prebuiltpath("*.framework")) do |framework_path|
+      Dir.glob(PodBuilder::buildpath_prebuiltpath("**/*.framework")) do |framework_path|
         framework_rel_path = rel_path(framework_path, podfile_items)
         dsym_path = framework_rel_path + ".dSYM"
 
@@ -274,14 +274,17 @@ module PodBuilder
 
     def self.copy_frameworks(podfile_items)
       Dir.glob(PodBuilder::buildpath_prebuiltpath("*.framework")) do |framework_path|
-        if (item = podfile_items.detect { |t| t.module_name == File.basename(framework_path, ".*") }) && item.is_prebuilt
-          next
-        end
-        framework_rel_path = rel_path(framework_path, podfile_items)
+        if item = podfile_items.detect { |t| t.module_name == File.basename(framework_path, ".*") || t.vendored_frameworks.map { |t| File.basename(t) }.include?(File.basename(framework_path)) }
+          if item.is_prebuilt
+            next
+          end
 
-        destination_path = PodBuilder::prebuiltpath(framework_rel_path)
-        FileUtils.mkdir_p(File.dirname(destination_path))
-        FileUtils.cp_r(framework_path, destination_path)
+          destination_path = PodBuilder::prebuiltpath(item.root_name)
+          FileUtils.mkdir_p(destination_path)
+          FileUtils.cp_r(framework_path, destination_path)  
+        else
+          raise "Unassocaited framework #{framework_path}"
+        end
       end
     end
 
@@ -295,10 +298,6 @@ module PodBuilder
         # making it impossible to determine the associated Pods when building multiple pods at once
         search_base = "#{Configuration.build_path}/Pods/"
         podfile_items.each do |podfile_item|
-          if podfile_item.vendored_framework_path.nil?
-            next
-          end
-          
           podfile_item.vendored_libraries.each do |vendored_item|
             if result = Dir.glob("#{search_base}**/#{vendored_item}").first
               result_path = result.gsub(search_base, "")
@@ -308,9 +307,10 @@ module PodBuilder
                                 
                 result_path = result_path.split("/").drop(1).join("/")
 
-                destination_path = PodBuilder::prebuiltpath("#{library_rel_path}/#{result_path}")
+                destination_path = PodBuilder::prebuiltpath("#{podfile_item.root_name}/#{library_rel_path}/#{result_path}")
                 FileUtils.mkdir_p(File.dirname(destination_path))
                 FileUtils.cp_r(library_path, destination_path, :remove_destination => true)
+                FileUtils.rm(library_path)
               end
             end
           end
@@ -330,12 +330,18 @@ module PodBuilder
                                 
               result_path = result_path.split("/").drop(1).join("/")
 
-              destination_path = PodBuilder::prebuiltpath("#{library_rel_path}/#{result_path}")
+              destination_path = PodBuilder::prebuiltpath("#{library.root_name}/#{library_rel_path}/#{result_path}")
               FileUtils.mkdir_p(File.dirname(destination_path))
-              FileUtils.cp_r(library_path, destination_path)        
+              FileUtils.cp_r(library_path, destination_path, :remove_destination => true)
+              FileUtils.rm(library_path)
             end
           end
         end
+      end
+
+      unassociated_libs = Dir.glob(PodBuilder::buildpath_prebuiltpath("*.a"))
+      if unassociated_libs.count > 0
+        raise "Unassociated libs found #{unassociated_libs} found"
       end
     end
 
