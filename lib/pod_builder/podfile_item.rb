@@ -397,7 +397,7 @@ module PodBuilder
       end
     end
 
-    def prebuilt_podspec_path(absolute_path = false)
+    def prebuilt_podspec_path(absolute_path = true)
       podspec_path = PodBuilder::prebuiltpath("#{@root_name}/#{@root_name}.podspec")
       if absolute_path 
         return podspec_path
