@@ -407,12 +407,12 @@ module PodBuilder
     end
 
     def prebuilt_entry(include_pb_entry = true, absolute_path = false)
-      podspec_path = prebuilt_podspec_path(absolute_path = absolute_path)
+      podspec_dirname = File.dirname(prebuilt_podspec_path(absolute_path = absolute_path))
 
       if Configuration.subspecs_to_split.include?(name)
-        entry = "pod '#{podspec_name}', :path => '#{podspec_path}'"
+        entry = "pod '#{podspec_name}', :path => '#{podspec_dirname}'"
       else
-        entry = "pod '#{name}', :path => '#{podspec_path}'"
+        entry = "pod '#{name}', :path => '#{podspec_dirname}'"
       end
 
       if include_pb_entry && !is_prebuilt
