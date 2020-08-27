@@ -25,20 +25,20 @@ module PodBuilder
       spec_var = "p#{slash_count}"
 
       if item.name == name
+        if_exists = lambda { |t| File.exist?(PodBuilder::prebuiltpath("#{item.root_name}/#{t}") || "") }
+
         vendored_frameworks = item.vendored_frameworks + ["#{item.module_name}.framework"]
-        existing_vendored_frameworks = vendored_frameworks.select { |t| File.exist?(PodBuilder::prebuiltpath(t) || "") }
-        existing_vendored_frameworks_basename = vendored_frameworks.map { |t| File.basename(t) }.select { |t| File.exist?(PodBuilder::prebuiltpath(t) || "") }
+        existing_vendored_frameworks = vendored_frameworks.select(&if_exists)
+        existing_vendored_frameworks_basename = existing_vendored_frameworks.map { |t| File.basename(t) }
         vendored_frameworks = (existing_vendored_frameworks + existing_vendored_frameworks_basename).uniq
-        vendored_frameworks.map! { |t| File.join(rel_path, t) }
         
         vendored_libraries = item.vendored_libraries
-        existing_vendored_libraries = vendored_libraries.map { |t| "#{item.module_name}/#{t}" }.select { |t| File.exist?(PodBuilder::prebuiltpath(t) || "") }
-        existing_vendored_libraries_basename = vendored_libraries.map { |t| File.basename("#{item.module_name}/#{t}") }.select { |t| File.exist?(PodBuilder::prebuiltpath(t) || "") }
+        existing_vendored_libraries = vendored_libraries.map { |t| "#{item.module_name}/#{t}" }.select(&if_exists)
+        existing_vendored_libraries_basename = existing_vendored_libraries.map { |t| File.basename(t) }
         vendored_libraries = (existing_vendored_libraries + existing_vendored_libraries_basename).uniq        
   
         # .a are static libraries and should not be included again in the podspec to prevent duplicated symbols (in the app and in the prebuilt framework)
-        vendored_libraries.select! { |t| !t.end_with?(".a") }
-        vendored_libraries.map! { |t| File.join(rel_path, t) }
+        vendored_libraries.reject! { |t| t.end_with?(".a") }
   
         frameworks = all_buildable_items.select { |t| vendored_frameworks.include?("#{t.module_name}.framework") }.uniq
         static_frameworks = frameworks.select { |x| x.is_static }
@@ -174,8 +174,17 @@ module PodBuilder
         podspec += main_keys
         podspec += "end"
 
-        spec_path = PodBuilder::podspecspath("#{item.root_name}.podspec")
-        File.write(spec_path, podspec)
+        spec_path = item.prebuilt_podspec_path
+        if File.directory?(File.dirname(spec_path))
+          File.write(spec_path, podspec)
+        else
+          message = "Prebuilt podspec destination not found for #{File.basename(spec_path)}".red
+          if ENV['DEBUGGING']
+            puts message
+          else
+            raise message
+          end
+        end
       end
     end
   end
