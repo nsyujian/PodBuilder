@@ -25,7 +25,7 @@ module PodBuilder
       spec_var = "p#{slash_count}"
 
       if item.name == name
-        if_exists = lambda { |t| File.exist?(PodBuilder::prebuiltpath("#{item.root_name}/#{t}") || "") }
+        if_exists = lambda { |t| File.exist?(PodBuilder::prebuiltpath("#{item.root_name}/#{t}") || "") || File.exist?(PodBuilder::prebuiltpath("#{item.root_name}/#{File.basename(t)}" || "")) }
 
         vendored_frameworks = item.vendored_frameworks + ["#{item.module_name}.framework"]
         existing_vendored_frameworks = vendored_frameworks.select(&if_exists)
