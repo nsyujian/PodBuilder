@@ -7,9 +7,7 @@ module PodBuilder
       result = {}
       name = nil
 
-      Dir.glob(PodBuilder::prebuiltpath("**/*.framework")).each do |path|
-        plist_path = File.join(path, Configuration.framework_plist_filename)
-
+      Dir.glob(PodBuilder::prebuiltpath("**/PodBuilder.plist")).each do |plist_path|         
         name, prebuilt_info = prebuilt_info(plist_path)
         result[name] = prebuilt_info
       end
