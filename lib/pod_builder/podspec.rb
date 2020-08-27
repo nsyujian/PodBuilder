@@ -148,6 +148,9 @@ module PodBuilder
             next # will process root spec, skip subspecs
           end
         end
+        if File.exist?(item.prebuilt_podspec_path)
+          next
+        end
 
         podspec = "Pod::Spec.new do |p1|\n"
 
