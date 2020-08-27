@@ -13,7 +13,8 @@ module PodBuilder
         all_buildable_items = Analyze.podfile_items(installer, analyzer)
 
         podspec_names = all_buildable_items.map(&:podspec_name)
-        rel_paths = all_buildable_items.map(&:prebuilt_rel_path) + all_buildable_items.map(&:vendored_frameworks).flatten.map { |t| File.basename(t) }
+        rel_paths = all_buildable_items.map { |t| "#{t.root_name}/#{t.prebuilt_rel_path}" }
+        rel_paths += all_buildable_items.map { |t| t.vendored_frameworks.map { |u| "#{t.root_name}/#{File.basename(u)}" }}.flatten
         rel_paths.uniq!
 
         base_path = PodBuilder::prebuiltpath
@@ -21,7 +22,7 @@ module PodBuilder
         puts "Looking for unused frameworks".yellow
         clean(framework_files, base_path, rel_paths)
 
-        rel_paths.map! { |x| "#{x}.dSYM"}
+        rel_paths.map! { |x| "#{File.basename(x)}.dSYM"}
 
         Configuration.supported_platforms.each do |platform|
           base_path = PodBuilder::dsympath(platform)
@@ -46,7 +47,7 @@ module PodBuilder
         repo_paths.each do |path|
           podspec_name = File.basename(path)
 
-          unless !podspec_names.include?(podspec_name)
+          if podspec_names.include?(podspec_name)
             next
           end
 
@@ -68,7 +69,7 @@ module PodBuilder
 
         paths_to_delete = []
         files.each do |rel_path, path|
-          unless !rel_paths.include?(rel_path)
+          if rel_paths.include?(rel_path)
             next
           end
 
@@ -82,11 +83,13 @@ module PodBuilder
           end
         end
 
-        Dir.chdir(base_path) do
-          # Before deleting anything be sure we're in a git repo
-          h = `git rev-parse --show-toplevel`.strip()
-          raise "\n\nNo git repository found in current folder `#{Dir.pwd}`!\n".red if h.empty?    
-          system("find . -type d -empty -delete") # delete empty folders
+        if File.directory?(base_path)
+          Dir.chdir(base_path) do
+            # Before deleting anything be sure we're in a git repo
+            h = `git rev-parse --show-toplevel`.strip()
+            raise "\n\nNo git repository found in current folder `#{Dir.pwd}`!\n".red if h.empty?    
+            system("find . -type d -empty -delete") # delete empty folders
+          end  
         end
       end
     end
