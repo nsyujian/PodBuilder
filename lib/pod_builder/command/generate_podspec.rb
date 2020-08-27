@@ -8,8 +8,9 @@ module PodBuilder
         PodBuilder::prepare_basepath
 
         installer, analyzer = Analyze.installer_at(PodBuilder::basepath, false)
+        all_buildable_items = Analyze.podfile_items(installer, analyzer)
 
-        Podspec::generate(analyzer)
+        Podspec::generate(all_buildable_items, analyzer)
 
         puts "\n\n🎉 done!\n".green
         return 0
