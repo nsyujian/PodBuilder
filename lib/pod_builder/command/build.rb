@@ -86,9 +86,7 @@ module PodBuilder
           podfile_items = podfile_items.map { |t| t.recursive_dependencies(all_buildable_items) }.flatten.uniq
           podfile_content = Podfile.from_podfile_items(podfile_items, analyzer, build_configuration)
           
-          Install.podfile(podfile_content, podfile_items, podfile_items.first.build_configuration)
-
-          licenses += license_specifiers
+          licenses += Install.podfile(podfile_content, podfile_items, podfile_items.first.build_configuration)
           
           # remove lockfile which gets unexplicably created
           FileUtils.rm_f(PodBuilder::basepath("Podfile.lock"))
@@ -124,18 +122,6 @@ module PodBuilder
       end
 
       private
-
-      def self.license_specifiers
-        acknowledge_file = "#{Configuration.build_path}/Pods/Target Support Files/Pods-DummyTarget/Pods-DummyTarget-acknowledgements.plist"
-        unless File.exist?(acknowledge_file)
-          raise "License file not found"
-        end
-
-        plist = CFPropertyList::List.new(:file => acknowledge_file)
-        data = CFPropertyList.native_types(plist.value)
-          
-        return data["PreferenceSpecifiers"] || []
-      end
 
       # def self.buildable_dependencies(pod, buildable_items)
       #   deps = []

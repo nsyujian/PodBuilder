@@ -107,6 +107,8 @@ module PodBuilder
         copy_frameworks(podfile_items)
         copy_libraries(podfile_items)
         copy_dsyms(podfile_items)
+
+        return license_specifiers
       rescue Exception => e
         raise e
       ensure
@@ -119,6 +121,18 @@ module PodBuilder
     end
 
     private 
+
+    def self.license_specifiers
+      acknowledge_file = "#{Configuration.build_path}/Pods/Target Support Files/Pods-DummyTarget/Pods-DummyTarget-acknowledgements.plist"
+      unless File.exist?(acknowledge_file)
+        raise "License file not found"
+      end
+
+      plist = CFPropertyList::List.new(:file => acknowledge_file)
+      data = CFPropertyList.native_types(plist.value)
+        
+      return data["PreferenceSpecifiers"] || []
+    end
 
     def self.copy_development_pods_source_code(podfile_content, podfile_items)
       if Configuration.build_using_repo_paths
