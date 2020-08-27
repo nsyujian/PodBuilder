@@ -126,17 +126,15 @@ module PodBuilder
       private
 
       def self.license_specifiers
-        acknowledge_files = Dir.glob("#{PodBuilder::Configuration.build_path}/Pods/**/*acknowledgements.plist")
-        raise "Too many ackwnoledge files found" if acknowledge_files.count > 1
-
-        if acknowledge_file = acknowledge_files.first
-          plist = CFPropertyList::List.new(:file => acknowledge_file)
-          data = CFPropertyList.native_types(plist.value)
-          
-          return data["PreferenceSpecifiers"]
+        acknowledge_file = "#{Configuration.build_path}/Pods/Target Support Files/Pods-DummyTarget/Pods-DummyTarget-acknowledgements.plist"
+        unless File.exist?(acknowledge_file)
+          raise "License file not found"
         end
 
-        return []
+        plist = CFPropertyList::List.new(:file => acknowledge_file)
+        data = CFPropertyList.native_types(plist.value)
+          
+        return data["PreferenceSpecifiers"] || []
       end
 
       # def self.buildable_dependencies(pod, buildable_items)
