@@ -215,16 +215,6 @@ module PodBuilder
       end
     end
 
-    def self.rel_path(path, podfile_items)
-      name = File.basename(path)
-      name_no_ext = File.basename(name, File.extname(name))
-      if podfile_item = podfile_items.detect { |x| x.module_name == name_no_ext && Configuration.subspecs_to_split.include?(x.name) }
-        return "#{podfile_item.prebuilt_rel_path}"
-      else
-        return name
-      end
-    end
-
     def self.add_framework_plist_info(podfile_items)
       swift_version = PodBuilder::system_swift_version
       Dir.glob(PodBuilder::buildpath_prebuiltpath("*.framework")) do |framework_path|
@@ -267,8 +257,9 @@ module PodBuilder
           end
 
           destination_path = PodBuilder::prebuiltpath(item.root_name)
+          PodBuilder::safe_rm_rf(destination_path)
           FileUtils.mkdir_p(destination_path)
-          FileUtils.cp_r(framework_path, destination_path)  
+          FileUtils.cp_r(framework_path, destination_path)
         else
           raise "Unassociated framework #{framework_path}"
         end
@@ -290,11 +281,11 @@ module PodBuilder
               result_path = result.gsub(search_base, "")
               module_name = result_path.split("/").first
               if module_name == podfile_item.module_name
-                library_rel_path = rel_path(module_name, podfile_items)
+                library_rel_path = "#{podfile_item.root_name}/#{podfile_item.prebuilt_rel_path}"
                                 
                 result_path = result_path.split("/").drop(1).join("/")
 
-                destination_path = PodBuilder::prebuiltpath("#{podfile_item.root_name}/#{library_rel_path}/#{result_path}")
+                destination_path = PodBuilder::prebuiltpath("#{library_rel_path}/#{result_path}")
                 FileUtils.mkdir_p(File.dirname(destination_path))
                 FileUtils.cp_r(library_path, destination_path, :remove_destination => true)
                 FileUtils.rm(library_path)
@@ -313,11 +304,11 @@ module PodBuilder
             if result = Dir.glob("#{search_base}**/lib#{library}.a").first
               result_path = result.gsub(search_base, "")
 
-              library_rel_path = rel_path(podfile_item.module_name, podfile_items)
+              library_rel_path = "#{podfile_item.root_name}/#{podfile_item.prebuilt_rel_path}"
                                 
               result_path = result_path.split("/").drop(1).join("/")
 
-              destination_path = PodBuilder::prebuiltpath("#{library.root_name}/#{library_rel_path}/#{result_path}")
+              destination_path = PodBuilder::prebuiltpath("#{library_rel_path}/#{result_path}")
               FileUtils.mkdir_p(File.dirname(destination_path))
               FileUtils.cp_r(library_path, destination_path, :remove_destination => true)
               FileUtils.rm(library_path)
@@ -335,9 +326,8 @@ module PodBuilder
     def self.copy_dsyms(podfile_items)
       Configuration.supported_platforms.each do |platform|
         Dir.glob("#{Configuration.build_path}/dSYM/#{platform}/**/*.dSYM") do |dsym_path|
-          framework_rel_path = rel_path(dsym_path.gsub(File.extname(dsym_path), ""), podfile_items)
-          
-          destination_path = PodBuilder::dsympath("#{platform}/#{File.dirname(framework_rel_path)}") 
+          destination_path = PodBuilder::dsympath(platform) 
+          PodBuilder.safe_rm_rf("#{destination_path}/#{File.basename(dsym_path)}")
           FileUtils.mkdir_p(destination_path)
           FileUtils.cp_r(dsym_path, destination_path)
         end  
