@@ -339,11 +339,18 @@ module PodBuilder
           end
         end
 
-        # Remove empty folders ignoring hidden files
+        expected_folder_names = buildable_items.map(&:root_name).uniq
+
+        # Remove folders that are empty (ignoring hidden files) or that are not among buildable_items
         folders = Dir.glob(PodBuilder::prebuiltpath("*")).select { |t| File.directory?(t) }
         folders.each do |folder|
-          if Dir.glob("#{folder}/*").count == 0 
+          if Dir.glob("#{folder}/*").count == 0
             puts "Cleanining up empty folder `#{folder}`".blue
+            PodBuilder::safe_rm_rf(folder)
+          end
+
+          unless expected_folder_names.include?(File.basename(folder))
+            puts "Cleanining unreferenced folder `#{folder}`".blue
             PodBuilder::safe_rm_rf(folder)
           end
         end
