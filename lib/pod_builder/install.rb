@@ -104,7 +104,6 @@ module PodBuilder
         install
 
         add_framework_plist_info(podfile_items)
-        cleanup_frameworks(podfile_items)        
         copy_frameworks(podfile_items)
         copy_libraries(podfile_items)
         copy_dsyms(podfile_items)
@@ -256,18 +255,6 @@ module PodBuilder
           plist.save(podbuilder_file, CFPropertyList::List::FORMAT_BINARY)
         else
           raise "Unable to detect item for framework #{filename}.framework. Please open a bug report!"
-        end
-      end
-    end
-
-    def self.cleanup_frameworks(podfile_items)
-      Dir.glob(PodBuilder::buildpath_prebuiltpath("**/*.framework")) do |framework_path|
-        framework_rel_path = rel_path(framework_path, podfile_items)
-        dsym_path = framework_rel_path + ".dSYM"
-
-        PodBuilder::safe_rm_rf(PodBuilder::prebuiltpath(framework_rel_path))
-        Configuration.supported_platforms.each do |platform|
-          PodBuilder::safe_rm_rf(PodBuilder::dsympath("#{platform}/#{dsym_path}"))
         end
       end
     end
