@@ -25,16 +25,16 @@ module PodBuilder
       spec_var = "p#{slash_count}"
 
       if item.name == name
-        if_exists = lambda { |t| File.exist?(PodBuilder::prebuiltpath("#{item.root_name}/#{t}") || "") || File.exist?(PodBuilder::prebuiltpath("#{item.root_name}/#{File.basename(t)}" || "")) }
+        if_exists = lambda { |t| File.exist?(PodBuilder::prebuiltpath("#{item.root_name}/#{t}") || "") }
 
         vendored_frameworks = item.vendored_frameworks + ["#{item.module_name}.framework"]
         existing_vendored_frameworks = vendored_frameworks.select(&if_exists)
-        existing_vendored_frameworks_basename = existing_vendored_frameworks.map { |t| File.basename(t) }
+        existing_vendored_frameworks_basename = vendored_frameworks.map { |t| File.basename(t) }.select(&if_exists)
         vendored_frameworks = (existing_vendored_frameworks + existing_vendored_frameworks_basename).uniq
         
         vendored_libraries = item.vendored_libraries
         existing_vendored_libraries = vendored_libraries.map { |t| "#{item.module_name}/#{t}" }.select(&if_exists)
-        existing_vendored_libraries_basename = existing_vendored_libraries.map { |t| File.basename(t) }
+        existing_vendored_libraries_basename = vendored_libraries.map { |t| File.basename(t) }.select(&if_exists)
         vendored_libraries = (existing_vendored_libraries + existing_vendored_libraries_basename).uniq        
   
         # .a are static libraries and should not be included again in the podspec to prevent duplicated symbols (in the app and in the prebuilt framework)
