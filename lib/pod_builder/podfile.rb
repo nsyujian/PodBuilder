@@ -190,7 +190,6 @@ module PodBuilder
 
               if File.exist?(dep_item.prebuilt_podspec_path) && !dep_item.is_prebuilt 
                 pod_name = dep_item.prebuilt_entry(false)
-                pod_name.gsub!(dep.name, dep.root_name)
                 prebuilt_lines.push("#{line.detect_indentation}#{pod_name}#{marker}\n")
               end
 
