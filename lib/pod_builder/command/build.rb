@@ -13,7 +13,7 @@ module PodBuilder
           return -1
         end
 
-        raise "\n\nPlease rename your Xcode installation path removing spaces, current `#{`xcode-select -p`.strip()}`\n" if `xcode-select -p`.strip().include?(" ")
+        raise "\n\nPlease rename your Xcode installation path removing spaces, current `#{`xcode-select -p`.strip()}`\n".red if `xcode-select -p`.strip().include?(" ")
 
         Podfile.sanity_check()
         check_not_building_subspecs(argument_pods)
@@ -201,7 +201,7 @@ module PodBuilder
       end
 
       def self.check_pods_exists(pods, buildable_items)
-        raise "Empty Podfile?" if buildable_items.nil?
+        raise "\n\nEmpty Podfile?".red if buildable_items.nil?
 
         buildable_items = buildable_items.map(&:root_name)
         pods.each do |pod|
@@ -223,7 +223,7 @@ module PodBuilder
         if OPTIONS[:allow_warnings]
           puts "\n\n⚠️  #{warn_message}".yellow
         else
-          raise "\n\n🚨️  #{warn_message}".yellow
+          raise "\n\n🚨️  #{warn_message}".red
         end
       end
 
@@ -237,14 +237,14 @@ module PodBuilder
           pods_with_unaligned_build_configuration = pods_with_common_deps.select { |x| x.build_configuration != pod.build_configuration }
           pods_with_unaligned_build_configuration.map!(&:name)
 
-          raise "Dependencies of `#{pod.name}` don't have the same build configuration (#{pod.build_configuration}) of `#{pods_with_unaligned_build_configuration.join(",")}`'s dependencies" if pods_with_unaligned_build_configuration.count > 0
+          raise "\n\nDependencies of `#{pod.name}` don't have the same build configuration (#{pod.build_configuration}) of `#{pods_with_unaligned_build_configuration.join(",")}`'s dependencies".red if pods_with_unaligned_build_configuration.count > 0
         end
       end
 
       def self.check_not_building_development_pods(pods)
         if (development_pods = pods.select { |x| x.is_development_pod }) && development_pods.count > 0 && (OPTIONS[:allow_warnings].nil?  && Configuration.allow_building_development_pods == false)
           pod_names = development_pods.map(&:name).join(", ")
-          raise "The following pods are in development mode: `#{pod_names}`, won't proceed building.\n\nYou can ignore this error by passing the `--allow-warnings` flag to the build command\n"
+          raise "\n\nThe following pods are in development mode: `#{pod_names}`, won't proceed building.\n\nYou can ignore this error by passing the `--allow-warnings` flag to the build command\n".red
         end
       end
 

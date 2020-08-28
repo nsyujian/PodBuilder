@@ -69,7 +69,7 @@ module PodBuilder
         resource_files = resource_files.map { |i| File.basename(i) }
         resource_files = resource_files.map { |i| i.gsub(".xib", ".nib") }
       else
-        raise "#{target} not found!".red
+        raise "\n\n#{target} not found!".red
       end
       
       # Check that Pods-TARGET-resources.sh doesn't contain colliding entries (Cocoapods 1.4.0)

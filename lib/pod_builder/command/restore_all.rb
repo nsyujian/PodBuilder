@@ -5,7 +5,7 @@ module PodBuilder
     class RestoreAll
       def self.call
         unless Configuration.restore_enabled
-          raise "Restore not enabled!".red
+          raise "\n\nRestore not enabled!".red
         end
   
         Configuration.check_inited

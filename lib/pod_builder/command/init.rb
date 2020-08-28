@@ -7,8 +7,8 @@ module PodBuilder
         raise "\n\nAlready initialized\n".red if Configuration.exists
 
         xcworkspace = Dir.glob("*.xcworkspace")
-        raise "\n\nNo xcworkspace found in current folder\n" if xcworkspace.count == 0
-        raise "\n\nToo many xcworkspaces found in current folder\n#{xcworkspace}\n" if xcworkspace.count > 1
+        raise "\n\nNo xcworkspace found in current folder\n".red if xcworkspace.count == 0
+        raise "\n\nToo many xcworkspaces found in current folder\n#{xcworkspace}\n".red if xcworkspace.count > 1
 
         Configuration.project_name = File.basename(xcworkspace.first, ".*")
         

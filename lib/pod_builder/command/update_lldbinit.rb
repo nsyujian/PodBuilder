@@ -125,7 +125,7 @@ module PodBuilder
         puts "Writing #{lldbinit_path}".yellow
 
         FileUtils.touch(lldbinit_path)
-        raise "\n\nDestination file should be a file" unless File.exist?(lldbinit_path)
+        raise "\n\nDestination file should be a file".red unless File.exist?(lldbinit_path)
 
         lldbinit_lines = []
         skipNext = false
@@ -138,7 +138,7 @@ module PodBuilder
             next
           elsif line != "\n"
             if line.include?("settings set target.source-map")
-              raise "\n\n#{lldbinit_destination_path} already includes a manual `settings set target.source-map`. This is unsupported and you'll have to manually remove that entry\n"
+              raise "\n\n#{lldbinit_destination_path} already includes a manual `settings set target.source-map`. This is unsupported and you'll have to manually remove that entry\n".red
             end
             lldbinit_lines.push(line)
           end

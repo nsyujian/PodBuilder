@@ -17,7 +17,7 @@ module PodBuilder
         argument_pods.each do |pod|
           pod_name_to_switch = pod
           pod_name_to_switch = Podfile::resolve_pod_names_from_podfile([pod_name_to_switch]).first
-          raise "\n\nDid not find pod '#{pod}'" if pod_name_to_switch.nil?
+          raise "\n\nDid not find pod '#{pod}'".red if pod_name_to_switch.nil?
           
           check_not_building_subspec(pod_name_to_switch)  
 
@@ -72,7 +72,7 @@ module PodBuilder
             podfile_path = PodBuilder::basepath("Podfile.restore")
             content = File.read(podfile_path)
             if !content.include?("pod '#{pod_name_to_switch}")
-              raise "\n\n'#{pod_name_to_switch}' does not seem to be prebuit!"
+              raise "\n\n'#{pod_name_to_switch}' does not seem to be prebuit!".red
             end
           when "default"
             podfile_path = PodBuilder::basepath("Podfile")
@@ -94,7 +94,7 @@ module PodBuilder
               end
             end
     
-            raise "\n\n'#{pod_name_to_switch}' not found in #{podfile_path}" if default_entries.keys.count == 0
+            raise "\n\n'#{pod_name_to_switch}' not found in #{podfile_path}".red if default_entries.keys.count == 0
           end
 
           if development_path.nil? 
@@ -148,10 +148,10 @@ module PodBuilder
                     lines.append(default_line)
                     next
                   elsif
-                    raise "Line for pod '#{matches[1]}' in section '#{current_section}' not found in PodBuilder's Podfile"
+                    raise "\n\nLine for pod '#{matches[1]}' in section '#{current_section}' not found in PodBuilder's Podfile".red
                   end
                 else
-                  raise "Unsupported mode '#{OPTIONS[:switch_mode]}'"
+                  raise "\n\nUnsupported mode '#{OPTIONS[:switch_mode]}'".red
                 end
               end  
             end

@@ -40,7 +40,7 @@ begin
         elsif defined?(Pod::Target::BuildType) # CocoaPods 1.7, 1.8
           Pod::Target::BuildType.new(linkage: :dynamic, packaging: :framework)
         else
-          raise "BuildType not found. Open an issue reporting your CocoaPods version"
+          raise "\n\nBuildType not found. Open an issue reporting your CocoaPods version".red
         end
       else
         swz_build_type()
@@ -125,7 +125,7 @@ module PodBuilder
     def self.license_specifiers
       acknowledge_file = "#{Configuration.build_path}/Pods/Target Support Files/Pods-DummyTarget/Pods-DummyTarget-acknowledgements.plist"
       unless File.exist?(acknowledge_file)
-        raise "License file not found"
+        raise "\n\nLicense file not found".red
       end
 
       plist = CFPropertyList::List.new(:file => acknowledge_file)
@@ -180,7 +180,7 @@ module PodBuilder
             podfile_items.select { |t| t.root_name == item.root_name }.each do |replace_item|
               replace_regex = "pod '#{Regexp.quote(replace_item.name)}', .*"
               replace_line_found = podfile_content =~ /#{replace_regex}/i
-              raise "Failed finding pod entry for '#{replace_item.name}'" unless replace_line_found
+              raise "\n\nFailed finding pod entry for '#{replace_item.name}'".red unless replace_line_found
               podfile_content.gsub!(/#{replace_regex}/, replace_item.prebuilt_entry(true, true))
             end
           end
@@ -258,7 +258,7 @@ module PodBuilder
           plist.value = CFPropertyList.guess(plist_data)
           plist.save(podbuilder_file, CFPropertyList::List::FORMAT_BINARY)
         else
-          raise "Unable to detect item for framework #{filename}.framework. Please open a bug report!"
+          raise "\n\nUnable to detect item for framework #{filename}.framework. Please open a bug report!".red
         end
       end
     end
@@ -275,7 +275,7 @@ module PodBuilder
           FileUtils.mkdir_p(destination_path)
           FileUtils.cp_r(framework_path, destination_path)
         else
-          raise "Unassociated framework #{framework_path}"
+          raise "\n\nUnassociated framework #{framework_path}".red
         end
       end
     end
@@ -333,7 +333,7 @@ module PodBuilder
 
       unassociated_libs = Dir.glob(PodBuilder::buildpath_prebuiltpath("*.a"))
       if unassociated_libs.count > 0
-        raise "Unassociated libs found #{unassociated_libs} found"
+        raise "\n\nUnassociated libs found #{unassociated_libs} found".red
       end
     end
 

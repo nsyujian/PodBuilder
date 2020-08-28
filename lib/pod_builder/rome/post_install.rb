@@ -3,7 +3,7 @@ require 'colored'
 
 module PodBuilder
   def self.build_for_iosish_platform(sandbox, build_dir, target, device, simulator, configuration, deterministic_build, build_for_apple_silicon)
-    raise "Apple silicon hardware still unsupported since it requires to migrate to xcframeworks" if build_for_apple_silicon
+    raise "\n\nApple silicon hardware still unsupported since it requires to migrate to xcframeworks".red if build_for_apple_silicon
 
     deployment_target = target.platform_deployment_target
     target_label = target.cocoapods_target_label
@@ -169,7 +169,7 @@ Pod::HooksManager.register('podbuilder-rome', :post_install) do |installer_conte
     when :osx then PodBuilder::xcodebuild(sandbox, target.cocoapods_target_label, configuration, PodBuilder::Configuration.deterministic_build, PodBuilder::Configuration.build_for_apple_silicon)
     when :tvos then PodBuilder::build_for_iosish_platform(sandbox, build_dir, target, 'appletvos', 'appletvsimulator', configuration, PodBuilder::Configuration.deterministic_build, PodBuilder::Configuration.build_for_apple_silicon)
     when :watchos then PodBuilder::build_for_iosish_platform(sandbox, build_dir, target, 'watchos', 'watchsimulator', configuration, PodBuilder::Configuration.deterministic_build, PodBuilder::Configuration.build_for_apple_silicon)
-    else raise "Unknown platform '#{target.platform_name}'" end
+    else raise "\n\nUnknown platform '#{target.platform_name}'".red end
   end
 
   raise Pod::Informative, 'The build directory was not found in the expected location.' unless build_dir.directory?
@@ -235,7 +235,7 @@ Pod::HooksManager.register('podbuilder-rome', :post_install) do |installer_conte
         binary_uuid = `xcrun dwarfdump --uuid '#{module_path}' | cut -d" " -f2`
         dsym_uuid = `xcrun dwarfdump --uuid '#{File.join(destination_dSYM, "Contents", "Resources", "DWARF", module_name)}' | cut -d" " -f2`
 
-        raise "dSYM sanity check failed for '#{framework}', UUID do not match!" unless binary_uuid == dsym_uuid
+        raise "\n\ndSYM sanity check failed for '#{framework}', UUID do not match!".red unless binary_uuid == dsym_uuid
       end
     end
   end

@@ -46,12 +46,12 @@ module PodBuilder
 
         repo_dir = File.join(dest_path, spec.podspec_name)
         if !File.directory?(repo_dir)
-          raise "Failed cloning #{spec.name}" if !system("git clone #{spec.repo} #{spec.podspec_name}")
+          raise "\n\nFailed cloning #{spec.name}".red if !system("git clone #{spec.repo} #{spec.podspec_name}")
         end
 
         Dir.chdir(repo_dir)
         puts "Checking out #{spec.podspec_name}".yellow
-        raise "Failed cheking out #{spec.name}" if !system(git_hard_checkout_cmd(spec))
+        raise "\n\nFailed cheking out #{spec.name}".red if !system(git_hard_checkout_cmd(spec))
 
         Dir.chdir(current_dir)
       end

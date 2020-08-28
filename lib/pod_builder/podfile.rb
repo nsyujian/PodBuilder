@@ -7,7 +7,7 @@ module PodBuilder
     private_constant :PRE_INSTALL_ACTIONS
 
     def self.from_podfile_items(items, analyzer, build_configuration)
-      raise "no items" unless items.count > 0
+      raise "\n\nno items".red unless items.count > 0
 
       sources = analyzer.sources
       
@@ -49,7 +49,7 @@ module PodBuilder
 
         if Configuration.build_system == "Legacy"
           build_settings['BUILD_LIBRARY_FOR_DISTRIBUTION'] = "NO"
-          raise "\n\nCan't enable library evolution support with legacy build system!" if Configuration.library_evolution_support
+          raise "\n\nCan't enable library evolution support with legacy build system!".red if Configuration.library_evolution_support
         elsif Configuration.library_evolution_support
           build_settings['BUILD_LIBRARY_FOR_DISTRIBUTION'] = "YES"
         end
@@ -318,7 +318,7 @@ module PodBuilder
 
         if stripped_line.match(/(pod')(.*?)(')/) != nil
           starting_def_found = stripped_line.start_with?("def") && (line.match("\s*def\s") != nil)
-          raise "Unsupported single line def/pod. `def` and `pod` shouldn't be on the same line, please modify the following line:\n#{line}" if starting_def_found
+          raise "\n\nUnsupported single line def/pod. `def` and `pod` shouldn't be on the same line, please modify the following line:\n#{line}".red if starting_def_found
         end
       end
     end
@@ -394,13 +394,13 @@ module PodBuilder
     def self.project_swift_version(analyzer)
       swift_versions = analyzer.instance_variable_get("@result").targets.map { |x| x.target_definition.swift_version }.compact.uniq
 
-      raise "Found different Swift versions in targets. Expecting one, got `#{swift_versions}`" if swift_versions.count > 1
+      raise "\n\nFound different Swift versions in targets. Expecting one, got `#{swift_versions}`".red if swift_versions.count > 1
 
       return swift_versions.first || PodBuilder::system_swift_version
     end
 
     def self.podfile_items_at(podfile_path, include_prebuilt = false)
-      raise "Expecting basepath folder!" if !File.exist?(PodBuilder::basepath("Podfile"))
+      raise "\n\nExpecting basepath folder!".red if !File.exist?(PodBuilder::basepath("Podfile"))
 
       if File.basename(podfile_path) != "Podfile"
         File.rename(PodBuilder::basepath("Podfile"), PodBuilder::basepath("Podfile.tmp"))
