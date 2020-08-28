@@ -108,8 +108,8 @@ module PodBuilder
       folder_in_home = x.gsub(home, "")
       !folder_in_home.include?("/Pods/") && !x.include?(PodBuilder::basepath("Sources")) && !x.include?(basepath) 
     }
-    raise "xcodeproj not found!".red if xcodeprojects.count == 0
-    raise "Found multiple xcodeproj:\n#{xcodeprojects.join("\n")}".red if xcodeprojects.count > 1
+    raise "\n\nxcodeproj not found!".red if xcodeprojects.count == 0
+    raise "\n\nFound multiple xcodeproj:\n#{xcodeprojects.join("\n")}".red if xcodeprojects.count > 1
 
     @@xcodeproj_path = xcodeprojects.first
     return @@xcodeproj_path
@@ -124,8 +124,8 @@ module PodBuilder
       folder_in_home = x.gsub(home, "")
       !folder_in_home.include?("/Pods/") && !x.include?(PodBuilder::basepath("Sources")) && !x.include?(basepath) && !x.include?(".xcodeproj/")
     }
-    raise "xcworkspace not found!".red if xcworkspaces.count == 0
-    raise "Found multiple xcworkspaces:\n#{xcworkspaces.join("\n")}".red if xcworkspaces.count > 1
+    raise "\n\nxcworkspace not found!".red if xcworkspaces.count == 0
+    raise "\n\nFound multiple xcworkspaces:\n#{xcworkspaces.join("\n")}".red if xcworkspaces.count > 1
 
     @@xcodeworkspace_path = xcworkspaces.first
     return @@xcodeworkspace_path
@@ -155,7 +155,7 @@ module PodBuilder
 
   def self.system_swift_version
     swift_version = `swiftc --version | grep -o 'swiftlang-.*\s'`.strip()
-    raise "Unsupported swift compiler version, expecting `swiftlang` keyword in `swiftc --version`" if swift_version.length == 0
+    raise "\n\nUnsupported swift compiler version, expecting `swiftlang` keyword in `swiftc --version`".red if swift_version.length == 0
     return swift_version
   end
 
