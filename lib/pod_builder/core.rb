@@ -3,6 +3,7 @@ require 'fileutils'
 require 'colored'
 
 require 'pod_builder/podfile'
+require 'pod_builder/podfile_cp'
 require 'pod_builder/podfile_item'
 require 'pod_builder/analyze'
 require 'pod_builder/analyzer'
