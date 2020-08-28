@@ -6,7 +6,10 @@ module PodBuilder
     class UpdateLldbInit
       def self.call
         Configuration.check_inited
-        
+        if Configuration.build_using_repo_paths
+          raise "\n\nlldb shenanigans not supported when 'build_using_repo_paths' is enabled".red
+        end
+
         argument_pods = ARGV.dup
         
         unless argument_pods.count > 0 

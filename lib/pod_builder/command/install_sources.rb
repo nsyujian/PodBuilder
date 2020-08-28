@@ -5,6 +5,10 @@ module PodBuilder
     class InstallSources
       def self.call
         Configuration.check_inited
+        if Configuration.build_using_repo_paths
+          raise "\n\nSource cannot be installed because lldb shenanigans not supported when 'build_using_repo_paths' is enabled".red
+        end
+
         PodBuilder::prepare_basepath
 
         install_update_repo = OPTIONS.fetch(:update_repos, true)
