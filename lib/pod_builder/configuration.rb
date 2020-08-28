@@ -64,6 +64,7 @@ module PodBuilder
       attr_accessor :supported_platforms
       attr_accessor :build_for_apple_silicon
       attr_accessor :build_using_repo_paths
+      attr_accessor :react_native_project
     end
     
     @allow_building_development_pods = false
@@ -98,6 +99,7 @@ module PodBuilder
     @supported_platforms = DEFAULT_PLATFORMS
     @build_for_apple_silicon = DEFAULT_BUILD_FOR_APPLE_SILICON
     @build_using_repo_paths = DEFAULT_BUILD_USING_REPO_PATHS
+    @react_native_project = false
     
     def self.check_inited
       raise "\n\nNot inited, run `pod_builder init`\n".red if podbuilder_path.nil?
@@ -216,6 +218,11 @@ module PodBuilder
             Configuration.build_using_repo_paths = value
           end
         end
+        if value = json["react_native_project"]
+          if [TrueClass, FalseClass].include?(value.class)
+            Configuration.react_native_project = value
+          end
+        end
         
         Configuration.build_settings.freeze
 
@@ -263,6 +270,7 @@ module PodBuilder
       config["deterministic_build"] = Configuration.deterministic_build
       config["build_for_apple_silicon"] = Configuration.build_for_apple_silicon
       config["build_using_repo_paths"] = Configuration.build_using_repo_paths
+      config["react_native_project"] = Configuration.react_native_project
       
       File.write(config_path, JSON.pretty_generate(config))
     end
