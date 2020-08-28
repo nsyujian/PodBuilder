@@ -1,3 +1,4 @@
+require 'json'
 module PodBuilder
   class Podfile
     PODBUILDER_LOCK_ACTION = ["raise \"\\n🚨  Do not launch 'pod install' manually, use `pod_builder` instead!\\n\" if !File.exist?('pod_builder.lock')"].freeze    
@@ -218,6 +219,8 @@ module PodBuilder
       project_podfile_path = PodBuilder::project_path("Podfile")
       File.write(project_podfile_path, podfile_content)
     end
+
+    
 
     def self.install
       puts "Running pod install".yellow
@@ -459,6 +462,9 @@ module PodBuilder
       end
 
       if !marker_found
+        if podfile_lines.last.strip.length > 0
+          podfile_lines.push("\n")
+        end
         podfile_lines.push("\n#{marker} do |installer|\n")
         podfile_lines.push(entries)
         podfile_lines.push("end\n")
@@ -555,67 +561,79 @@ module PodBuilder
       return podfile_lines.join
     end
 
-    def self.prepare_for_react_native_rn_pods_file(podfile_content)
-      rn_regex = "((.|\n)*)((.*)use_react_native!(.*))((.|\n)*)"
-      matches = podfile_content.match(/#{rn_regex}/)
+    def self.prepare_for_react_native_write_pb_configuration(podfile_content)
+      base = File.expand_path(File.join(PodBuilder::project_path, ".."))
+      bin_js = Dir.glob("#{base}/node_modules/@react-native-community/cli/build/bin.js")
 
-      unless matches&.size == 8
-        return podfile_content
+      raise "\n\nReact native cli bin_js not found!".red unless bin_js.count == 1
+      bin_js = bin_js.first
+
+      config_dest_path = PodBuilder::basepath("rn_config.json")
+
+      raise "\n\nFailed generating react native configuration file".red unless system("node '#{bin_js}' config > #{config_dest_path}")
+      
+      content = File.read(config_dest_path)
+
+      content.gsub!(PodBuilder::project_path, "..")
+      content.gsub!(File.expand_path(PodBuilder::project_path("..")), "../..")
+
+      json = JSON.parse(content)
+      begin
+        json["project"]["ios"]["sourceDir"] = "./"
+        json["project"]["ios"]["podfile"] = "./"  
+      rescue => exception
+        raise "\n\nFailed updating react native configuration json".red
+      end
+      
+      File.write(config_dest_path, JSON.pretty_generate(json))
+
+      return "rn_config = JSON.load(File.read(\"rn_config.json\")) # pb added\n\n" + podfile_content
+    end
+
+    def self.prepare_for_react_native_rn_pods_file(podfile_content)
+      lines = []
+      podfile_content.each_line do |line|
+        if line.include?("use_react_native!")
+          matches = line.match(/(\s*)/)
+          unless matches&.size == 2
+            return podfile_content
+          end
+    
+          indentation = matches[1]
+          lines.push("#{indentation}use_react_native!(:path => rn_config[\"reactNativePath\"]) # pb added\n")
+          lines.push("#{indentation}# #{line.strip} # pb removed\n")
+        else
+          lines.push(line)
+        end
       end
 
-      pre_use_react_native = matches[1]
-      use_react_native_indendation = matches[2]
-      use_react_native = matches[3]
-      post_use_react_native = matches[6]
-
-      rel_path = Pathname.new(Pathname.new(PodBuilder::project_path)).relative_path_from(OPTIONS[:prebuild_path]).to_s
-
-      config_line = "#{use_react_native_indendation} use_react_native!(:path => '#{rel_path}/../node_modules/react-native')"
-      podfile_content = "#{pre_use_react_native}\n#{config_line}\n #{use_react_native_indendation}# #{use_react_native}#{post_use_react_native}"     
-
-      return podfile_content
+      return lines.join
     end
 
     def self.prepare_for_react_native_native_modules_file(podfile_content)
-      rn_regex = "((.|\n)*)((.*)require_relative '((.*)node_modules\/@react-native-community\/cli-platform-ios\/native_modules)')((.|\n)*)"
-      matches = podfile_content.match(/#{rn_regex}/)
-
-      unless matches&.size == 9 && podfile_content.include?("use_react_native!") 
-        return podfile_content
+      lines = []
+      podfile_content.each_line do |line|
+        if line.include?("use_native_modules!")
+          matches = line.match(/(\s*)/)
+          unless matches&.size == 2
+            return podfile_content
+          end
+    
+          indentation = matches[1]
+          lines.push("#{indentation}use_native_modules!(rn_config) # pb added\n")
+          lines.push("#{indentation}# #{line.strip} # pb removed\n")
+        else
+          lines.push(line)
+        end
       end
 
-      pre_require = matches[1]
-      require_indentation = matches[2]
-      require_line = matches[3]
-      require_path = matches[5]
-      require_relpath = matches[6]
-      post_require = matches[7]
-
-      podfile_content = pre_require
-      podfile_content += "#{require_indentation}# #{require_line}\n#{require_indentation}require_relative '#{File.basename(require_path)}'"
-      podfile_content += post_require
-
-      # Fix native_module.rb paths
-      native_module_path = File.expand_path(PodBuilder::basepath(require_path + ".rb"))
-      raise "#{native_module_path} not found" unless File.exist?(native_module_path)
-
-      pb_native_module_path = PodBuilder::basepath(File.basename(native_module_path))
-      FileUtils.cp(native_module_path, pb_native_module_path)
-
-      content = File.read(pb_native_module_path)
-
-      marker = 'project_root = Pathname.new(config["project"]["ios"]["sourceDir"])'
-      raise "project_root = Pathname not found" unless content.include?(marker)
-
-      content.gsub!(marker, "project_root = PodBuilder::basepath")
-
-      Configuration.build_using_repo_paths = true
-
-      return podfile_content
+      return lines.join
     end
 
     def self.prepare_for_react_native(podfile_content)
       original_podfile_content = podfile_content.dup
+
+      podfile_content = prepare_for_react_native_write_pb_configuration(podfile_content)
       content = prepare_for_react_native_rn_pods_file(podfile_content)
       if content == podfile_content
         return original_podfile_content
@@ -625,8 +643,10 @@ module PodBuilder
       if content == podfile_content
         return original_podfile_content
       end
+      podfile_content = content
 
       Configuration.build_using_repo_paths = true
+      Configuration.react_native_project = true
 
       return podfile_content
     end
