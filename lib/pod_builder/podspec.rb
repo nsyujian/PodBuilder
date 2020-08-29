@@ -149,7 +149,7 @@ module PodBuilder
           end
         end
         if File.exist?(item.prebuilt_podspec_path)
-          next
+          next # skip if podspec was already generated
         end
 
         podspec = "Pod::Spec.new do |p1|\n"
