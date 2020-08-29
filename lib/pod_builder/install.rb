@@ -331,9 +331,15 @@ module PodBuilder
         end
       end
 
+      all_vendored_libraries = podfile_items.map(&:vendored_libraries).flatten
+      all_vendored_libraries += all_vendored_libraries.map { |t| File.basename(t) }
+      all_vendored_libraries.uniq!
+
       unassociated_libs = Dir.glob(PodBuilder::buildpath_prebuiltpath("*.a"))
+      unassociated_libs.map! { |t| t.gsub(PodBuilder::buildpath_prebuiltpath, "")[1..] }
+      unassociated_libs.reject! { |t| all_vendored_libraries.include?(t) }
       if unassociated_libs.count > 0
-        raise "\n\nUnassociated libs found #{unassociated_libs} found".red
+        puts "\n\nUnassociated libs found #{unassociated_libs} found".red
       end
     end
 
