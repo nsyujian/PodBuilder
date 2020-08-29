@@ -11,12 +11,14 @@ module Pod
 
         explicit_deps = self.dependencies.map { |t| all_buildable_items.detect { |u| u.name == t.name } }.compact
         
+        pod_entries = []
+        prebuild_entries = []
         self.dependencies.each do |dep|
           if podfile_item = all_buildable_items.detect { |t| t.name == dep.name } 
             if File.exist?(podfile_item.prebuilt_podspec_path) && !podfile_item.is_prebuilt 
-              target_s += "#{child_indentation}#{podfile_item.prebuilt_entry(false)}\n"
+              prebuild_entries.push(podfile_item)
             else
-              target_s += "#{child_indentation}#{podfile_item.entry(true, false)}\n"
+              pod_entries.push(podfile_item)
             end
 
             non_explicit_dependencies = podfile_item.recursive_dependencies(all_buildable_items) - explicit_deps
@@ -33,13 +35,24 @@ module Pod
               dep_item = all_buildable_items.detect { |x| x.name == dep.name }
 
               if File.exist?(dep_item.prebuilt_podspec_path) && !dep_item.is_prebuilt 
-                target_s += "#{child_indentation}#{dep_item.prebuilt_entry(false)}\n"
+                prebuild_entries.push(dep_item)
+              else
+                pod_entries.push(dep_item)
               end
 
               explicit_deps.push(dep)
             end       
-
           end
+        end
+
+        prebuild_entries = prebuild_entries.uniq.sort_by { |t| t.name }
+        pod_entries = pod_entries.uniq.sort_by { |t| t.name }
+
+        prebuild_entries.each do |pod|
+          target_s += "#{child_indentation}#{pod.prebuilt_entry(false)}\n"
+        end
+        pod_entries.each do |pod|
+          target_s += "#{child_indentation}#{pod.entry(true, false)}\n"
         end
 
         if self.children.count > 0
@@ -74,7 +87,7 @@ class PodfileCP
     if path.start_with?(prebuilt_prefix)
       return path
     else
-      return Podfile.podfile_path_transform(path)
+      return PodBuilder::Podfile.podfile_path_transform(path)
     end
   end
 end
