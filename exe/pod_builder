@@ -333,7 +333,12 @@ Usage:
       You may want to run this command when you add a new pod to the PodBuilder-Podfile 
       and you want to integrate it in the project without rebuilding it.
         
-"      end,
+Options:
+"       
+        opts.on("-u", "--skip-repo-update", "Skip CocoaPods repo update") do |o|
+          OPTIONS[:update_repos] = false
+        end
+      end,
       :call => [        
         PodBuilder::Command::SyncPodfile
       ]
