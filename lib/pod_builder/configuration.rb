@@ -22,7 +22,7 @@ module PodBuilder
         "module_name": "double_conversion"
       }
     }.freeze
-    DEFAULT_SKIP_PODS = ["GoogleMaps", "Flipper", "FlipperKit", "Flipper-DoubleConversion", "Flipper-Folly", "Flipper-Glog", "Flipper-PeerTalk", "Flipper-RSocket"]
+    DEFAULT_SKIP_PODS = ["GoogleMaps", "Flipper", "FlipperKit", "Flipper-DoubleConversion", "Flipper-Folly", "Flipper-Glog", "Flipper-PeerTalk", "Flipper-RSocket", "React-cxxreact"]
     DEFAULT_FORCE_PREBUILD_PODS = ["Firebase", "GoogleTagManager"]
     DEFAULT_BUILD_SYSTEM = "Legacy".freeze # either Latest (New build system) or Legacy (Standard build system)
     DEFAULT_LIBRARY_EVOLUTION_SUPPORT = false
