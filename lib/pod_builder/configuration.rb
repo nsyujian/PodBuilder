@@ -17,6 +17,9 @@ module PodBuilder
     DEFAULT_SPEC_OVERRIDE = {
       "Google-Mobile-Ads-SDK" => {
         "module_name": "GoogleMobileAds"
+      },
+      "DoubleConversion": {
+        "module_name": "double_conversion"
       }
     }.freeze
     DEFAULT_SKIP_PODS = ["GoogleMaps", "Flipper", "FlipperKit", "Flipper-DoubleConversion", "Flipper-Folly", "Flipper-Glog", "Flipper-PeerTalk", "Flipper-RSocket"]
