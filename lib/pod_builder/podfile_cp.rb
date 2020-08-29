@@ -68,3 +68,13 @@ module Pod
   end
 end
 
+class PodfileCP
+  def self.podfile_path_transform(path)
+    prebuilt_prefix = PodBuilder::prebuiltpath.gsub(PodBuilder::project_path, "")[1..] + "/"
+    if path.start_with?(prebuilt_prefix)
+      return path
+    else
+      return Podfile.podfile_path_transform(path)
+    end
+  end
+end
