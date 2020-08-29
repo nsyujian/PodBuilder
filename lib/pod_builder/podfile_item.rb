@@ -317,7 +317,7 @@ module PodBuilder
       if !no_sources && !only_headers
         return false
       else
-        return embedded_as_static_lib || embedded_as_vendored
+        return (no_sources || only_headers || embedded_as_static_lib || embedded_as_vendored)
       end
     end
 
