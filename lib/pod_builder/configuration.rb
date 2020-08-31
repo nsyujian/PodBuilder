@@ -75,7 +75,7 @@ module PodBuilder
     @build_settings_overrides = {}
     @build_system = DEFAULT_BUILD_SYSTEM
     @library_evolution_support = DEFAULT_LIBRARY_EVOLUTION_SUPPORT
-    @base_path = "Frameworks" # Not nice. This value is used only for initial initization. Once config is loaded it will be an absolute path. FIXME
+    @base_path = "PodBuilder" # Not nice. This value is used only for initial initization. Once config is loaded it will be an absolute path. FIXME
     @spec_overrides = DEFAULT_SPEC_OVERRIDE
     @skip_licenses = []
     @skip_pods = DEFAULT_SKIP_PODS
@@ -298,7 +298,7 @@ module PodBuilder
     
     def self.podbuilder_path
       paths = Dir.glob("#{PodBuilder::home}/**/.pod_builder")
-      paths.reject! { |t| t.match(/pod-builder-.*\/Example\/Frameworks\/\.pod_builder$/i) }
+      paths.reject! { |t| t.match(/pod-builder-.*\/Example\/#{File.basename(Configuration.base_path)}\/\.pod_builder$/i) }
       raise "\n\nToo many .pod_builder found `#{paths.join("\n")}`\n".red if paths.count > 1
       
       return paths.count > 0 ? File.dirname(paths.first) : nil

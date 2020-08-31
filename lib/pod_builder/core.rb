@@ -59,7 +59,7 @@ module PodBuilder
       return nil
     end
 
-    path = basepath("Rome")
+    path = basepath("Prebuilt")
     if child.length > 0
       path += "/#{child}"
     end
@@ -72,7 +72,7 @@ module PodBuilder
       return nil
     end
 
-    path = "#{Configuration.build_path}/Rome"
+    path = "#{Configuration.build_path}/Prebuilt"
     if child.length > 0
       path += "/#{child}"
     end

@@ -79,7 +79,6 @@ module PodBuilder
       pod_version = version_info_from_entry(data["entry"])
       pod_name = pod_name_from_entry(data["entry"])
 
-      
       result.merge!({ "version": pod_version })
       result.merge!({ "specs": (data["specs"] || []) })
       result.merge!({ "is_static": (data["is_static"] || false) })
