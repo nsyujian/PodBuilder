@@ -95,7 +95,7 @@ Running `pod_builder build [pod name]` will precompile the pod that should be in
 
 The following will happen:
 
-- Create one or more (if there are dependencies) _.framework_ file/s under _PodBuilder/Rome_ along with its corresponding _dSYM_ files (if applicable) 
+- Create one or more (if there are dependencies) _.framework_ file/s under _PodBuilder/Prebuilt_ along with its corresponding _dSYM_ files (if applicable) 
 - Update the Application-Podfile replacing the pod definition with the precompiled ones
 - Update/create the Podfile.restore (Restore-Podfile)
 - Update/create PodBuilder.podspec which is a local podspec for your prebuilt frameworks (more on this later)
@@ -108,7 +108,7 @@ As `build` but will prebuild all pods defined in PodBuilder-Podfile.
 
 #### `update` command
 
-If you decide not to commit the _Rome_ and _dSYM_ folders you can use this command to rebuild all those frameworks that are out-of-sync with the Restore-Podfile or that were built with a different version of the Swift compiler.
+If you decide not to commit the _Prebuilt_ and _dSYM_ folders you can use this command to rebuild all those frameworks that are out-of-sync with the Restore-Podfile or that were built with a different version of the Swift compiler.
 
 #### `restore_all` command
 
@@ -310,7 +310,7 @@ Normally when multiple subspecs are specified in a target a single framework is 
 
 #### `lfs_update_gitattributes` 
 
-Adds a _.gitattributes_ to _PodBuilder/Rome_ and _PodBuilder/dSYM_ to exclude large files. If `lfs_include_pods_folder` is true it will add a the same _.gitattributes_ to the application's _Pods_ folder as well.
+Adds a _.gitattributes_ to _PodBuilder/Prebuilt_ and _PodBuilder/dSYM_ to exclude large files. If `lfs_include_pods_folder` is true it will add a the same _.gitattributes_ to the application's _Pods_ folder as well.
 
 
 #### `lfs_include_pods_folder`
@@ -329,7 +329,7 @@ If set to true built frameworks will include iPhone simulator slices for Apple s
 
 # Behind the scenes
 
-PodBuilder leverages CocoaPods code and [cocoapods-rome plugin](https://github.com/CocoaPods/Rome) to compile pods into frameworks. Every compiled framework will be boxed (by adding it as a `vendored_framework`) as a subspec of a local podspec. When needed additional settings will be automatically ported from the original podspec, like for example xcconfig settings.
+PodBuilder leverages CocoaPods code and [cocoapods-rome plugin](https://github.com/CocoaPods/Prebuilt) to compile pods into frameworks. Every compiled framework will be boxed (by adding it as a `vendored_framework`) as a subspec of a local podspec. When needed additional settings will be automatically ported from the original podspec, like for example xcconfig settings.
 
 # FAQ
 
@@ -365,7 +365,7 @@ Relaunch the build command passing `-d`, this won't delete the temporary _/tmp/p
 
 ### **Do I need to commit compiled frameworks?**
 
-No. If the size of compiled frameworks in your repo is a concern (and for whatever reason you can't use [Git-LFS](#git-lfs)) you can choose add the _Rome_ and _dSYM_ folder to .gitignore and run `pod_builder update` to rebuild all frameworks that need to be recompiled.
+No. If the size of compiled frameworks in your repo is a concern (and for whatever reason you can't use [Git-LFS](#git-lfs)) you can choose add the _Prebuilt_ and _dSYM_ folder to .gitignore and run `pod_builder update` to rebuild all frameworks that need to be recompiled.
 
 
 ### **I get an _'attempt to read non existent folder `/private/tmp/pod_builder/Pods/ podname'_ when building**

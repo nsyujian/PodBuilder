@@ -10,7 +10,7 @@ Gemfile.lock
 .vscode/
 .DS_Store
 Example/Pods
-Example/PodBuilder/Rome
+Example/PodBuilder/Prebuilt
 
 Example/PodBuilder/dSYM
 

@@ -159,7 +159,7 @@ Pod::HooksManager.register('podbuilder-rome', :post_install) do |installer_conte
   PodBuilder::enable_debug_information(sandbox.project_path, configuration)
 
   build_dir = sandbox_root.parent + 'build'
-  destination = sandbox_root.parent + 'Rome'
+  destination = sandbox_root.parent + 'Prebuilt'
 
   build_dir.rmtree if build_dir.directory?
   targets = installer_context.umbrella_targets.select { |t| t.specs.any? }

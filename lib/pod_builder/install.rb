@@ -306,7 +306,7 @@ module PodBuilder
           end
 
           # A pod might depend upon a static library that is shipped with a prebuilt framework
-          # which is not added to the Rome folder and podspecs
+          # which is not added to the Prebuilt folder and podspecs
           # 
           # An example is Google-Mobile-Ads-SDK which adds
           # - vendored framework: GooleMobileAds.framework 

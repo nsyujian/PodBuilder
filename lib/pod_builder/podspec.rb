@@ -1,5 +1,5 @@
 # This file contains the logic that generates the .podspec files that are placed
-# along to the prebuild frameworks under Frameworks/Rome
+# along to the prebuild frameworks under PodBuilder/Prebuilt
 
 module PodBuilder
   class Podspec
