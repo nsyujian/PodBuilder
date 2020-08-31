@@ -320,29 +320,29 @@ PODS:
   - ReactiveSwift (6.3.0)
 
 DEPENDENCIES:
-  - abseil (from `Frameworks/Rome`)
-  - AFNetworking (from `Frameworks/Rome`)
-  - Alamofire (from `Frameworks/Rome`)
-  - BoringSSL-GRPC (from `Frameworks/Rome`)
+  - abseil (from `PodBuilder/Rome`)
+  - AFNetworking (from `PodBuilder/Rome`)
+  - Alamofire (from `PodBuilder/Rome`)
+  - BoringSSL-GRPC (from `PodBuilder/Rome`)
   - Firebase
-  - FirebaseAuth (from `Frameworks/Rome`)
-  - FirebaseCore (from `Frameworks/Rome`)
-  - FirebaseCoreDiagnostics (from `Frameworks/Rome`)
-  - FirebaseCrashlytics (from `Frameworks/Rome`)
-  - FirebaseDatabase (from `Frameworks/Rome`)
-  - FirebaseFirestore (from `Frameworks/Rome`)
-  - FirebaseInstallations (from `Frameworks/Rome`)
+  - FirebaseAuth (from `PodBuilder/Rome`)
+  - FirebaseCore (from `PodBuilder/Rome`)
+  - FirebaseCoreDiagnostics (from `PodBuilder/Rome`)
+  - FirebaseCrashlytics (from `PodBuilder/Rome`)
+  - FirebaseDatabase (from `PodBuilder/Rome`)
+  - FirebaseFirestore (from `PodBuilder/Rome`)
+  - FirebaseInstallations (from `PodBuilder/Rome`)
   - FirebasePerformance
-  - GoogleDataTransport (from `Frameworks/Rome`)
-  - GoogleUtilities (from `Frameworks/Rome`)
-  - "gRPC-C++ (from `Frameworks/Rome`)"
-  - gRPC-Core (from `Frameworks/Rome`)
-  - GTMSessionFetcher (from `Frameworks/Rome`)
-  - leveldb-library (from `Frameworks/Rome`)
-  - Loop (from `Frameworks/Rome`)
-  - nanopb (from `Frameworks/Rome`)
-  - PromisesObjC (from `Frameworks/Rome`)
-  - ReactiveSwift (from `Frameworks/Rome`)
+  - GoogleDataTransport (from `PodBuilder/Rome`)
+  - GoogleUtilities (from `PodBuilder/Rome`)
+  - "gRPC-C++ (from `PodBuilder/Rome`)"
+  - gRPC-Core (from `PodBuilder/Rome`)
+  - GTMSessionFetcher (from `PodBuilder/Rome`)
+  - leveldb-library (from `PodBuilder/Rome`)
+  - Loop (from `PodBuilder/Rome`)
+  - nanopb (from `PodBuilder/Rome`)
+  - PromisesObjC (from `PodBuilder/Rome`)
+  - ReactiveSwift (from `PodBuilder/Rome`)
 
 SPEC REPOS:
   trunk:
@@ -357,47 +357,47 @@ SPEC REPOS:
 
 EXTERNAL SOURCES:
   abseil:
-    :path: Frameworks/Rome
+    :path: PodBuilder/Rome
   AFNetworking:
-    :path: Frameworks/Rome
+    :path: PodBuilder/Rome
   Alamofire:
-    :path: Frameworks/Rome
+    :path: PodBuilder/Rome
   BoringSSL-GRPC:
-    :path: Frameworks/Rome
+    :path: PodBuilder/Rome
   FirebaseAuth:
-    :path: Frameworks/Rome
+    :path: PodBuilder/Rome
   FirebaseCore:
-    :path: Frameworks/Rome
+    :path: PodBuilder/Rome
   FirebaseCoreDiagnostics:
-    :path: Frameworks/Rome
+    :path: PodBuilder/Rome
   FirebaseCrashlytics:
-    :path: Frameworks/Rome
+    :path: PodBuilder/Rome
   FirebaseDatabase:
-    :path: Frameworks/Rome
+    :path: PodBuilder/Rome
   FirebaseFirestore:
-    :path: Frameworks/Rome
+    :path: PodBuilder/Rome
   FirebaseInstallations:
-    :path: Frameworks/Rome
+    :path: PodBuilder/Rome
   GoogleDataTransport:
-    :path: Frameworks/Rome
+    :path: PodBuilder/Rome
   GoogleUtilities:
-    :path: Frameworks/Rome
+    :path: PodBuilder/Rome
   "gRPC-C++":
-    :path: Frameworks/Rome
+    :path: PodBuilder/Rome
   gRPC-Core:
-    :path: Frameworks/Rome
+    :path: PodBuilder/Rome
   GTMSessionFetcher:
-    :path: Frameworks/Rome
+    :path: PodBuilder/Rome
   leveldb-library:
-    :path: Frameworks/Rome
+    :path: PodBuilder/Rome
   Loop:
-    :path: Frameworks/Rome
+    :path: PodBuilder/Rome
   nanopb:
-    :path: Frameworks/Rome
+    :path: PodBuilder/Rome
   PromisesObjC:
-    :path: Frameworks/Rome
+    :path: PodBuilder/Rome
   ReactiveSwift:
-    :path: Frameworks/Rome
+    :path: PodBuilder/Rome
 
 SPEC CHECKSUMS:
   abseil: 38dd06f1a1c46a8077431abb08d5ee08e3c47ddb

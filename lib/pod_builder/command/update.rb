@@ -24,7 +24,7 @@ module PodBuilder
         pods_to_update.map! { |x| x.split("/").first }.uniq!
         
         unless pods_to_update.count > 0
-          puts "Frameworks in sync!\n".green
+          puts "Prebuilt items in sync!\n".green
           return 0
         end
         if OPTIONS.has_key?(:dry_run)
