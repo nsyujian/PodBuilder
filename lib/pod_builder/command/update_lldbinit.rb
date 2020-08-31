@@ -58,7 +58,7 @@ module PodBuilder
           name = File.basename(framework_path, File.extname(framework_path)) 
           executable_path = File.join(framework_path, name)
 
-          podbuilder_plist = File.join(framework_path, Configuration.framework_plist_filename)
+          podbuilder_plist = File.join(framework_path, Configuration.framework_info_filename)
 
           plist = CFPropertyList::List.new(:file => podbuilder_plist)
           data = CFPropertyList.native_types(plist.value)

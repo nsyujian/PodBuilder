@@ -238,7 +238,7 @@ module PodBuilder
         specs = podfile_items.select { |x| x.module_name == filename }
         specs += podfile_items.select { |x| x.vendored_frameworks.map { |x| File.basename(x) }.include?(filename_ext) }
         if podfile_item = specs.first
-          podbuilder_file = File.join(framework_path, Configuration.framework_plist_filename)
+          podbuilder_file = File.join(framework_path, Configuration.framework_info_filename)
           entry = podfile_item.entry(true, false)
 
           plist = CFPropertyList::List.new
@@ -363,7 +363,7 @@ module PodBuilder
     end
 
     def self.build_folder_hash_in_framework_plist_info(framework_path)
-      podbuilder_file = File.join(framework_path, Configuration.framework_plist_filename)
+      podbuilder_file = File.join(framework_path, Configuration.framework_info_filename)
 
       unless File.exist?(podbuilder_file)
         return nil

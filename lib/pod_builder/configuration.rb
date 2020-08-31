@@ -59,7 +59,7 @@ module PodBuilder
       attr_accessor :lfs_include_pods_folder
       attr_accessor :project_name
       attr_accessor :restore_enabled
-      attr_accessor :framework_plist_filename
+      attr_accessor :framework_info_filename
       attr_accessor :lockfile_name
       attr_accessor :lockfile_path
       attr_accessor :use_bundler
@@ -92,7 +92,7 @@ module PodBuilder
     @lfs_include_pods_folder = false
     @project_name = ""
     @restore_enabled = true
-    @framework_plist_filename = "PodBuilder.plist"
+    @framework_info_filename = "PodBuilder.plist"
     @lockfile_name = "PodBuilder.lock"
     @lockfile_path = "/tmp/#{lockfile_name}"
 
