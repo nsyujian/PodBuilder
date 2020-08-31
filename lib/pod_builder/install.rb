@@ -103,9 +103,7 @@ module PodBuilder
         install
 
         add_framework_info_file(podfile_items)
-        copy_frameworks(podfile_items)
-        copy_libraries(podfile_items)
-        copy_dsyms(podfile_items)
+        copy_prebuilt_items(podfile_items)
 
         return license_specifiers
       rescue Exception => e
@@ -237,7 +235,7 @@ module PodBuilder
         specs = podfile_items.select { |x| x.module_name == filename }
         specs += podfile_items.select { |x| x.vendored_frameworks.map { |x| File.basename(x) }.include?(filename_ext) }
         if podfile_item = specs.first
-          parent_framework_path = File.expand_path(File.joing(framework_path, ".."))
+          parent_framework_path = File.expand_path(File.join(framework_path, ".."))
           podbuilder_file = File.join(parent_framework_path, Configuration.framework_info_filename)
           entry = podfile_item.entry(true, false)
 
@@ -261,95 +259,8 @@ module PodBuilder
       end
     end
 
-    def self.copy_frameworks(podfile_items)
-      Dir.glob(PodBuilder::buildpath_prebuiltpath("*.framework")) do |framework_path|
-        if item = podfile_items.detect { |t| t.module_name == File.basename(framework_path, ".*") || t.vendored_frameworks.map { |t| File.basename(t) }.include?(File.basename(framework_path)) }
-          if item.is_prebuilt
-            next
-          end
+    def self.copy_prebuilt_items
 
-          destination_path = PodBuilder::prebuiltpath(item.root_name)
-          PodBuilder::safe_rm_rf("#{destination_path}/#{File.basename(framework_path)}")
-          FileUtils.mkdir_p(destination_path)
-          FileUtils.cp_r(framework_path, destination_path)
-        else
-          raise "\n\nUnassociated framework #{framework_path}".red
-        end
-      end
-    end
-
-    def self.copy_libraries(podfile_items)
-      Dir.glob(PodBuilder::buildpath_prebuiltpath("*.a")) do |library_path|
-        library_name = File.basename(library_path)
-
-        # Find vendored libraries in the build folder:
-        # This allows to determine which Pod is associated to the vendored_library
-        # because there are cases where vendored_libraries are specified with wildcards (*.a)
-        # making it impossible to determine the associated Pods when building multiple pods at once
-        search_base = "#{Configuration.build_path}/Pods/"
-        podfile_items.each do |podfile_item|
-          podfile_item.vendored_libraries.each do |vendored_item|
-            if result = Dir.glob("#{search_base}**/#{vendored_item}").first
-              result_path = result.gsub(search_base, "")
-              module_name = result_path.split("/").first
-              if module_name == podfile_item.module_name
-                library_rel_path = "#{podfile_item.root_name}/#{podfile_item.prebuilt_rel_path}"
-                                
-                result_path = result_path.split("/").drop(1).join("/")
-
-                destination_path = PodBuilder::prebuiltpath("#{library_rel_path}/#{result_path}")
-                FileUtils.mkdir_p(File.dirname(destination_path))
-                FileUtils.cp_r(library_path, destination_path, :remove_destination => true)
-                FileUtils.rm(library_path)
-              end
-            end
-          end
-
-          # A pod might depend upon a static library that is shipped with a prebuilt framework
-          # which is not added to the Prebuilt folder and podspecs
-          # 
-          # An example is Google-Mobile-Ads-SDK which adds
-          # - vendored framework: GooleMobileAds.framework 
-          # - vendored library: libGooleMobileAds.a
-          # These might be used by another pod (e.g AppNexusSDK/GoogleAdapterThatDependsOnGooglePod)
-          podfile_item.libraries.each do |library|            
-            if result = Dir.glob("#{search_base}**/lib#{library}.a").first
-              result_path = result.gsub(search_base, "")
-
-              library_rel_path = "#{podfile_item.root_name}/#{podfile_item.prebuilt_rel_path}"
-                                
-              result_path = result_path.split("/").drop(1).join("/")
-
-              destination_path = PodBuilder::prebuiltpath("#{library_rel_path}/#{result_path}")
-              FileUtils.mkdir_p(File.dirname(destination_path))
-              FileUtils.cp_r(library_path, destination_path, :remove_destination => true)
-              FileUtils.rm(library_path)
-            end
-          end
-        end
-      end
-
-      all_vendored_libraries = podfile_items.map(&:vendored_libraries).flatten
-      all_vendored_libraries += all_vendored_libraries.map { |t| File.basename(t) }
-      all_vendored_libraries.uniq!
-
-      unassociated_libs = Dir.glob(PodBuilder::buildpath_prebuiltpath("*.a"))
-      unassociated_libs.map! { |t| t.gsub(PodBuilder::buildpath_prebuiltpath, "")[1..] }
-      unassociated_libs.reject! { |t| all_vendored_libraries.include?(t) }
-      if unassociated_libs.count > 0
-        puts "\n\nUnassociated libs found #{unassociated_libs} found".red
-      end
-    end
-
-    def self.copy_dsyms(podfile_items)
-      Configuration.supported_platforms.each do |platform|
-        Dir.glob("#{Configuration.build_path}/dSYM/#{platform}/**/*.dSYM") do |dsym_path|
-          destination_path = PodBuilder::dsympath(platform) 
-          PodBuilder.safe_rm_rf("#{destination_path}/#{File.basename(dsym_path)}")
-          FileUtils.mkdir_p(destination_path)
-          FileUtils.cp_r(dsym_path, destination_path)
-        end  
-      end
     end
 
     def self.init_git(path)

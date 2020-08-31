@@ -159,7 +159,7 @@ Pod::HooksManager.register('podbuilder-rome', :post_install) do |installer_conte
   PodBuilder::enable_debug_information(sandbox.project_path, configuration)
 
   build_dir = sandbox_root.parent + 'build'
-  destination = sandbox_root.parent + 'Prebuilt'
+  base_destination = sandbox_root.parent + 'Prebuilt'
 
   build_dir.rmtree if build_dir.directory?
   targets = installer_context.umbrella_targets.select { |t| t.specs.any? }
@@ -173,71 +173,54 @@ Pod::HooksManager.register('podbuilder-rome', :post_install) do |installer_conte
   end
 
   raise Pod::Informative, 'The build directory was not found in the expected location.' unless build_dir.directory?
-
-  # Make sure the device target overwrites anything in the simulator build, otherwise iTunesConnect
-  # can get upset about Info.plist containing references to the simulator SDK
-  frameworks = Pathname.glob("build/*/*/*.framework").reject { |f| f.to_s =~ /Pods[^.]+\.framework/ }
-  frameworks += Pathname.glob("build/*.framework").reject { |f| f.to_s =~ /Pods[^.]+\.framework/ }
-
-  resources = []
   
-  Pod::UI.puts "Built #{frameworks.count} #{'frameworks'.pluralize(frameworks.count)}"
+  built_count = installer_context.umbrella_targets.map { |t| t.specs.map(&:name) }.flatten.map { |t| t.split("/").first }.uniq.count
+  Pod::UI.puts "Built #{built_count} #{'items'.pluralize(built_count)}, copying..."
 
-  destination.rmtree if destination.directory?
+  base_destination.rmtree if base_destination.directory?
 
   installer_context.umbrella_targets.each do |umbrella|
     umbrella.specs.each do |spec|
+      root_name = spec.name.split("/").first
+      # Make sure the device target overwrites anything in the simulator build, otherwise iTunesConnect
+      # can get upset about Info.plist containing references to the simulator SDK
+      frameworks = Pathname.glob("build/*/#{root_name}/*.framework").reject { |f| f.to_s =~ /Pods[^.]+\.framework/ }
+
       consumer = spec.consumer(umbrella.platform_name)
       file_accessor = Pod::Sandbox::FileAccessor.new(sandbox.pod_dir(spec.root.name), consumer)
       frameworks += file_accessor.vendored_libraries
       frameworks += file_accessor.vendored_frameworks
-      resources += file_accessor.resources
+      resources = file_accessor.resources
+
+      destination = File.join(base_destination, root_name)
+      FileUtils.mkdir_p(destination)
+      (frameworks + resources).each do |file|
+        FileUtils.cp_r file, destination
+      end    
     end
   end
-  frameworks.uniq!
-  resources.uniq!
 
-  Pod::UI.puts "Copying #{frameworks.count} #{'frameworks'.pluralize(frameworks.count)} " \
-    "to `#{destination.relative_path_from Pathname.pwd}`"
+  # Depending on the resource it may happen that it is present twice, both in the .framework and in the parent folder
+  Dir.glob("#{base_destination}/*") do |path|
+    unless File.directory?(path)
+      return
+    end
 
-  FileUtils.mkdir_p destination
-  (frameworks + resources).each do |file|
-    FileUtils.cp_r file, destination, :remove_destination => true
+    files = Dir.glob("#{path}/*")
+    framework_files = Dir.glob("#{path}/*.framework/**/*").map { |t| File.basename(t) }
+
+    files.each do |file|
+      filename = File.basename(file.gsub(/\.xib$/, ".nib"))
+      if framework_files.include?(filename)
+        FileUtils.rm_rf(file)
+      end
+    end
   end
 
   if enable_dsym
     PodBuilder::copy_dsym_files(sandbox_root.parent + 'dSYM', configuration)
   else
-    frameworks = Dir.glob(File.join(destination, "*.framework"))
-
-    dsym_base_path = sandbox_root.parent + 'dSYM'
-
-    # manually generate dSYMs
-    frameworks.each do |framework|
-      module_name = File.basename(framework, ".*")
-      is_static = `file #{File.join(framework, module_name)} | grep 'ar archive' | wc -l`.strip() != "0"
-
-      if !is_static
-        destination_dSYM = File.join(dsym_base_path, "#{module_name}.dSYM")
-        FileUtils.mkdir_p(dsym_base_path)
-
-        module_path = "#{File.join(framework, module_name)}"
-        system("xcrun dsymutil '#{module_path}' -no-swiftmodule-timestamp -o '#{destination_dSYM}' 2>/dev/null")
-        if `xcrun codesign -v #{module_path} 2>&1 | grep 'code object is not signed at all' | wc -l`.strip() == "1"
-          system("xcrun strip -x -S '#{module_path}'")
-        else
-          # Running strip on codesigned binaries triggers the following warning:
-          # 'strip: changes being made to the file will invalidate the code signature in: path to binary'          
-          puts "#{module_name} appears to be codesigned, skipping stripping.".blue
-        end
-
-        # Sanity check
-        binary_uuid = `xcrun dwarfdump --uuid '#{module_path}' | cut -d" " -f2`
-        dsym_uuid = `xcrun dwarfdump --uuid '#{File.join(destination_dSYM, "Contents", "Resources", "DWARF", module_name)}' | cut -d" " -f2`
-
-        raise "\n\ndSYM sanity check failed for '#{framework}', UUID do not match!".red unless binary_uuid == dsym_uuid
-      end
-    end
+    raise "Not implemented"
   end
 
   build_dir.rmtree if build_dir.directory?
