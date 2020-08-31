@@ -1,4 +1,3 @@
-require 'cfpropertylist'
 require 'digest'
 require 'colored'
 
@@ -103,7 +102,7 @@ module PodBuilder
   
         install
 
-        add_framework_plist_info(podfile_items)
+        add_framework_info_file(podfile_items)
         copy_frameworks(podfile_items)
         copy_libraries(podfile_items)
         copy_dsyms(podfile_items)
@@ -174,7 +173,7 @@ module PodBuilder
       items.each do |item|
         framework_path = PodBuilder::prebuiltpath("#{item.root_name}/#{item.module_name}.framework")
         podspec_path = item.prebuilt_podspec_path
-        if (last_build_folder_hash = build_folder_hash_in_framework_plist_info(framework_path)) && File.exist?(podspec_path)
+        if (last_build_folder_hash = build_folder_hash_in_framework_info_file(framework_path)) && File.exist?(podspec_path)
           if last_build_folder_hash == build_folder_hash(item)
             puts "No changes detected to '#{item.root_name}', will skip rebuild".blue
             podfile_items.select { |t| t.root_name == item.root_name }.each do |replace_item|
@@ -229,7 +228,7 @@ module PodBuilder
       end
     end
 
-    def self.add_framework_plist_info(podfile_items)
+    def self.add_framework_info_file(podfile_items)
       swift_version = PodBuilder::system_swift_version
       Dir.glob(PodBuilder::buildpath_prebuiltpath("*.framework")) do |framework_path|
         filename_ext = File.basename(framework_path)
@@ -238,25 +237,24 @@ module PodBuilder
         specs = podfile_items.select { |x| x.module_name == filename }
         specs += podfile_items.select { |x| x.vendored_frameworks.map { |x| File.basename(x) }.include?(filename_ext) }
         if podfile_item = specs.first
-          podbuilder_file = File.join(framework_path, Configuration.framework_info_filename)
+          parent_framework_path = File.expand_path(File.joing(framework_path, ".."))
+          podbuilder_file = File.join(parent_framework_path, Configuration.framework_info_filename)
           entry = podfile_item.entry(true, false)
 
-          plist = CFPropertyList::List.new
-          plist_data = {}
-          plist_data['entry'] = entry
-          plist_data['is_prebuilt'] = podfile_item.is_prebuilt  
+          data = {}
+          data['entry'] = entry
+          data['is_prebuilt'] = podfile_item.is_prebuilt  
           if Dir.glob(File.join(framework_path, "Headers/*-Swift.h")).count > 0
-            plist_data['swift_version'] = swift_version
+            data['swift_version'] = swift_version
           end
           subspecs_deps = specs.map(&:dependency_names).flatten
           subspec_self_deps = subspecs_deps.select { |x| x.start_with?("#{podfile_item.root_name}/") }
-          plist_data['specs'] = (specs.map(&:name) + subspec_self_deps).uniq
-          plist_data['is_static'] = podfile_item.is_static
-          plist_data['original_compile_path'] = Pathname.new(Configuration.build_path).realpath.to_s
-          plist_data['build_folder_hash'] = build_folder_hash(podfile_item)
+          data['specs'] = (specs.map(&:name) + subspec_self_deps).uniq
+          data['is_static'] = podfile_item.is_static
+          data['original_compile_path'] = Pathname.new(Configuration.build_path).realpath.to_s
+          data['build_folder_hash'] = build_folder_hash(podfile_item)
 
-          plist.value = CFPropertyList.guess(plist_data)
-          plist.save(podbuilder_file, CFPropertyList::List::FORMAT_BINARY)
+          File.write(podbuilder_file, JSON.pretty_generate(data))
         else
           raise "\n\nUnable to detect item for framework #{filename}.framework. Please open a bug report!".red
         end
@@ -362,17 +360,17 @@ module PodBuilder
       Dir.chdir(current_dir)
     end
 
-    def self.build_folder_hash_in_framework_plist_info(framework_path)
-      podbuilder_file = File.join(framework_path, Configuration.framework_info_filename)
+    def self.build_folder_hash_in_framework_info_file(framework_path)
+      parent_framework_path = File.expand_path(File.joing(framework_path, ".."))
+      framework_info_path = File.join(framework_path, Configuration.framework_info_filename)
 
-      unless File.exist?(podbuilder_file)
+      if File.exist?(framework_info_path)
+        data = JSON.parse(File.read(framework_info_path))
+
+        return data['build_folder_hash']  
+      else
         return nil
       end
-
-      plist = CFPropertyList::List.new(:file => podbuilder_file)
-      data = CFPropertyList.native_types(plist.value)
-
-      return data['build_folder_hash']
     end
 
     def self.build_folder_hash(podfile_item)

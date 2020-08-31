@@ -92,7 +92,7 @@ module PodBuilder
     @lfs_include_pods_folder = false
     @project_name = ""
     @restore_enabled = true
-    @framework_info_filename = "PodBuilder.plist"
+    @framework_info_filename = "PodBuilder.json"
     @lockfile_name = "PodBuilder.lock"
     @lockfile_path = "/tmp/#{lockfile_name}"
 

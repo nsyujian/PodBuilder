@@ -1,4 +1,4 @@
-require 'cfpropertylist'
+require 'json'
 
 module PodBuilder
   class Info
@@ -7,8 +7,8 @@ module PodBuilder
       result = {}
       name = nil
 
-      Dir.glob(PodBuilder::prebuiltpath("**/PodBuilder.plist")).each do |plist_path|         
-        name, prebuilt_info = prebuilt_info(plist_path)
+      Dir.glob(PodBuilder::prebuiltpath("**/#{Configuration.framework_info_filename}")).each do |json_path|         
+        name, prebuilt_info = prebuilt_info(json_path)
         result[name] = prebuilt_info
       end
 
@@ -68,10 +68,9 @@ module PodBuilder
       unless File.exist?(path)
         return {}
       end
-      
-      plist = CFPropertyList::List.new(:file => path)
-      data = CFPropertyList.native_types(plist.value)
-      
+
+      data = JSON.load(File.read(path))
+            
       result = {}
       if swift_version = data["swift_version"]
         result.merge!({ "swift_version": swift_version})

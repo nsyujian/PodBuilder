@@ -45,7 +45,6 @@ module PodBuilder
   
         resources = static_frameworks.map { |x| x.vendored_framework_path.nil? ? nil : "#{x.vendored_framework_path}/*.{nib,bundle,xcasset,strings,png,jpg,tif,tiff,otf,ttf,ttc,plist,json,caf,wav,p12,momd}" }.compact.flatten.uniq
         exclude_files = static_frameworks.map { |x| x.vendored_framework_path.nil? ? nil : "#{x.vendored_framework_path}/Info.plist" }.compact.flatten.uniq
-        exclude_files += frameworks.map { |x| x.vendored_framework_path.nil? ? nil : "#{x.vendored_framework_path}/#{Configuration.framework_info_filename}" }.compact.flatten.uniq.sort
           
         if vendored_frameworks.count > 0
           podspec += "#{indentation}#{spec_var}.vendored_frameworks = '#{vendored_frameworks.uniq.sort.join("','")}'\n"
