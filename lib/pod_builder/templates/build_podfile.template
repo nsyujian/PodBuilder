@@ -2,7 +2,7 @@ require 'CFPropertyList'
 
 %%%sources%%%
 
-use_frameworks!
+%%%use_frameworks%%%
 
 plugin 'podbuilder-rome', {  dsym: true, configuration: '%%%build_configuration%%%', pre_compile: Proc.new { |installer|
 

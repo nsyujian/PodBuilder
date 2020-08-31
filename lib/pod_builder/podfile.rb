@@ -16,6 +16,10 @@ module PodBuilder
       podfile = File.read("#{cwd}/templates/build_podfile.template")
 
       platform = analyzer.instance_variable_get("@result").targets.first.platform
+
+      install_using_frameworks = analyzer.podfile.root_target_definitions.map(&:uses_frameworks?).uniq.first
+      podfile.sub!("%%%use_frameworks%%%", install_using_frameworks ? "use_frameworks!" : "") 
+
       podfile.sub!("%%%platform_name%%%", platform.name.to_s)
       podfile.sub!("%%%deployment_version%%%", platform.deployment_target.version)
 
