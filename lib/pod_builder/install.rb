@@ -169,9 +169,8 @@ module PodBuilder
       # Replace prebuilt entries in Podfile for Pods that have no changes in source code which will avoid rebuilding them
       items = podfile_items.group_by { |t| t.root_name }.map { |k, v| v.first } # Return one podfile_item per root_name
       items.each do |item|
-        framework_path = PodBuilder::prebuiltpath("#{item.root_name}/#{item.module_name}.framework")
         podspec_path = item.prebuilt_podspec_path
-        if (last_build_folder_hash = build_folder_hash_in_prebuilt_info_file(framework_path)) && File.exist?(podspec_path)
+        if last_build_folder_hash = build_folder_hash_in_prebuilt_info_file(item)
           if last_build_folder_hash == build_folder_hash(item)
             puts "No changes detected to '#{item.root_name}', will skip rebuild".blue
             podfile_items.select { |t| t.root_name == item.root_name }.each do |replace_item|
@@ -188,7 +187,7 @@ module PodBuilder
     end
 
     def self.install
-      puts "Building frameworks".yellow
+      puts "Prebuilding items".yellow
 
       CLAide::Command::PluginManager.load_plugins("cocoapods")
 
@@ -289,13 +288,11 @@ module PodBuilder
       Dir.chdir(current_dir)
     end
 
-    def self.build_folder_hash_in_prebuilt_info_file(framework_path)
-      parent_framework_path = File.expand_path(File.join(framework_path, ".."))
-      framework_info_path = File.join(framework_path, Configuration.prebuilt_info_filename)
+    def self.build_folder_hash_in_prebuilt_info_file(podfile_item)
+      prebuilt_info_path = PodBuilder.prebuiltpath(File.join(podfile_item.root_name, Configuration.prebuilt_info_filename))
 
-      if File.exist?(framework_info_path)
-        data = JSON.parse(File.read(framework_info_path))
-
+      if File.exist?(prebuilt_info_path)
+        data = JSON.parse(File.read(prebuilt_info_path))
         return data['build_folder_hash']  
       else
         return nil

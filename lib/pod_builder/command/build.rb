@@ -92,7 +92,7 @@ module PodBuilder
           FileUtils.rm_f(PodBuilder::basepath("Podfile.lock"))
         end
 
-        clean_frameworks_folder(all_buildable_items)
+        clean_prebuilt_folder(all_buildable_items)
 
         Licenses::write(licenses, all_buildable_items)
 
@@ -219,7 +219,7 @@ module PodBuilder
           return
         end
 
-        warn_message = "The following pods `#{invalid_subspecs.join(" ")}` are non static frameworks which are being splitted over different targets. Beware that this is an unsafe setup as per https://github.com/CocoaPods/CocoaPods/issues/5708 and https://github.com/CocoaPods/CocoaPods/issues/5643\n\nYou can ignore this error by passing the `--allow-warnings` flag to the build command\n"
+        warn_message = "The following pods `#{invalid_subspecs.join(" ")}` are non static binaries which are being splitted over different targets. Beware that this is an unsafe setup as per https://github.com/CocoaPods/CocoaPods/issues/5708 and https://github.com/CocoaPods/CocoaPods/issues/5643\n\nYou can ignore this error by passing the `--allow-warnings` flag to the build command\n"
         if OPTIONS[:allow_warnings]
           puts "\n\n⚠️  #{warn_message}".yellow
         else
@@ -304,8 +304,8 @@ module PodBuilder
         return pods_to_build
       end
 
-      def self.clean_frameworks_folder(buildable_items)
-        puts "Cleaning framework folder".yellow
+      def self.clean_prebuilt_folder(buildable_items)
+        puts "Cleaning prebuilt folder".yellow
 
         root_names = buildable_items.map(&:root_name).uniq
         Dir.glob(File.join(PodBuilder::prebuiltpath, "*")).each do |path|

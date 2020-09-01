@@ -267,9 +267,9 @@ Usage:
     $ pod_builder update_lldbinit <LLDBINIT_PATH> <PATH>
 
       Update LLDBINIT_PATH setting target.source-map in order to be able to step into 
-      and debug prebuilt framework's code.
+      and debug prebuilt prebuilt's code.
 
-      Specify the PATH of the folder containing the source code of prebuilt frameworks. PATH can be relative to PodBuilder's Framework folder.
+      Specify the PATH of the folder containing the source code of prebuilt items. PATH can be relative to PodBuilder's Prebuilt folder.
 
 "         
       end,

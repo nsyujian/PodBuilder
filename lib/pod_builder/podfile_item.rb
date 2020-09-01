@@ -63,7 +63,7 @@ module PodBuilder
     #
     attr_reader :external_dependency_names
     
-    # @return [Bool] True if the pod is shipped as a static framework
+    # @return [Bool] True if the pod is shipped as a static binary
     #
     attr_reader :is_static
     
@@ -280,7 +280,7 @@ module PodBuilder
 
       root_names = deps.map(&:root_name).uniq
 
-      # We need to build all other common subspecs to properly build the framework
+      # We need to build all other common subspecs to properly build the item
       # Ex. 
       # PodA depends on DepA/subspec1
       # PodB depends on DepA/subspec2
@@ -366,9 +366,9 @@ module PodBuilder
       end
 
       if include_pb_entry && !is_prebuilt
-        framework_info_path = PodBuilder::prebuiltpath("#{root_name}/#{Configuration::prebuilt_info_filename}")
-        if File.exist?(framework_info_path)
-          data = JSON.parse(File.read(framework_info_path))
+        prebuilt_info_path = PodBuilder::prebuiltpath("#{root_name}/#{Configuration::prebuilt_info_filename}")
+        if File.exist?(prebuilt_info_path)
+          data = JSON.parse(File.read(prebuilt_info_path))
           swift_version = data["swift_version"]
           is_static = data["is_static"] || false
         
