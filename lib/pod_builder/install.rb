@@ -76,7 +76,7 @@ end
 
 module PodBuilder
   class Install
-    # This method will build frameworks starting from the "/tmp/pod_builder/Podfile"
+    # This method will generate prebuilt data by building from "/tmp/pod_builder/Podfile"
     def self.podfile(podfile_content, podfile_items, build_configuration)
       puts "Preparing build Podfile".yellow
 
@@ -103,7 +103,7 @@ module PodBuilder
         install
 
         copy_prebuilt_items(podfile_items)
-        add_framework_info_file(podfile_items)
+        add_prebuilt_info_file(podfile_items)
 
         return license_specifiers
       rescue Exception => e
@@ -171,7 +171,7 @@ module PodBuilder
       items.each do |item|
         framework_path = PodBuilder::prebuiltpath("#{item.root_name}/#{item.module_name}.framework")
         podspec_path = item.prebuilt_podspec_path
-        if (last_build_folder_hash = build_folder_hash_in_framework_info_file(framework_path)) && File.exist?(podspec_path)
+        if (last_build_folder_hash = build_folder_hash_in_prebuilt_info_file(framework_path)) && File.exist?(podspec_path)
           if last_build_folder_hash == build_folder_hash(item)
             puts "No changes detected to '#{item.root_name}', will skip rebuild".blue
             podfile_items.select { |t| t.root_name == item.root_name }.each do |replace_item|
@@ -242,7 +242,7 @@ module PodBuilder
       end
     end
 
-    def self.add_framework_info_file(podfile_items)
+    def self.add_prebuilt_info_file(podfile_items)
       swift_version = PodBuilder::system_swift_version
 
       root_names = podfile_items.reject(&:is_prebuilt).map(&:root_name).uniq
@@ -259,7 +259,7 @@ module PodBuilder
           next
         end
 
-        podbuilder_file = File.join(path, Configuration.framework_info_filename)
+        podbuilder_file = File.join(path, Configuration.prebuilt_info_filename)
         entry = podfile_item.entry(true, false)
 
         data = {}
@@ -289,9 +289,9 @@ module PodBuilder
       Dir.chdir(current_dir)
     end
 
-    def self.build_folder_hash_in_framework_info_file(framework_path)
+    def self.build_folder_hash_in_prebuilt_info_file(framework_path)
       parent_framework_path = File.expand_path(File.join(framework_path, ".."))
-      framework_info_path = File.join(framework_path, Configuration.framework_info_filename)
+      framework_info_path = File.join(framework_path, Configuration.prebuilt_info_filename)
 
       if File.exist?(framework_info_path)
         data = JSON.parse(File.read(framework_info_path))

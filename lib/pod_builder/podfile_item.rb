@@ -366,7 +366,7 @@ module PodBuilder
       end
 
       if include_pb_entry && !is_prebuilt
-        framework_info_path = PodBuilder::prebuiltpath("#{root_name}/#{Configuration::framework_info_filename}")
+        framework_info_path = PodBuilder::prebuiltpath("#{root_name}/#{Configuration::prebuilt_info_filename}")
         if File.exist?(framework_info_path)
           data = JSON.parse(File.read(framework_info_path))
           swift_version = data["swift_version"]

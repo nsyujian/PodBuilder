@@ -59,7 +59,7 @@ module PodBuilder
           executable_path = File.join(framework_path, name)
 
           parent_framework_path = File.expand_path(File.joing(framework_path, ".."))
-          framework_info_path = File.join(parent_framework_path, Configuration.framework_info_filename)
+          framework_info_path = File.join(parent_framework_path, Configuration.prebuilt_info_filename)
           data = JSON.parse(File.read(framework_info_path))
 
           original_compile_path = data["original_compile_path"]

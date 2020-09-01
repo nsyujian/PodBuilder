@@ -36,15 +36,15 @@ Command:
     + deintegrate                    Deintegrate prebuild folders
     + build                          Build a specific pod declared in the PodBuilder-Podfile
     + build_all                      Build all pods declared in the PodBuilder-Podfile
-    + update                         Rebuild frameworks that are outdated
+    + update                         Rebuild items that are outdated
     + restore_all                    Rebuild all pods declared in the Restore-Podfile
-    + install_sources                Install sources of pods to debug into prebuilt frameworks
-    + update_lldbinit                Generate an lldbinit file with setting target.source-map to debug prebuilt frameworks
+    + install_sources                Install sources of pods to debug into prebuilt items
+    + update_lldbinit                Generate an lldbinit file with setting target.source-map to debug prebuilt items
     + clear_lldbinit                 Clear an lldbinit file from PodBuilder's customizations
     + switch                         Switch between prebuilt/development/standard pod in the Application-Podfile
-    + clean                          Remove prebuild frameworks, dSYMs and source files added by `install_sources` command that are no longer in the PodBuilder-Podfile
+    + clean                          Remove prebuild items, dSYMs and source files added by `install_sources` command that are no longer in the PodBuilder-Podfile
     + sync_podfile                   Update your Application-Podfile with all pods declared in the PodBuilder-Podfile
-    + info                           Print json-formatted informations about prebuilt frameworks
+    + info                           Print json-formatted informations about prebuilt items
 
 Options:
 "
@@ -71,7 +71,7 @@ Options:
         opts.on("-u", "--skip-repo-update", "Skip CocoaPods repo update") do |o|
           OPTIONS[:update_repos] = false
         end
-        opts.on("-f", "--force", "Rebuild frameworks evan if no code change is detected") do |o|
+        opts.on("-f", "--force", "Rebuild items even when no code change is detected") do |o|
           OPTIONS[:force_rebuild] = false
         end
         opts.on("-w", "--allow-warnings", "Allow warnings") do |o|
@@ -103,7 +103,7 @@ Options:
         opts.on("-u", "--skip-repo-update", "Skip CocoaPods repo update") do |o|
           OPTIONS[:update_repos] = false
         end
-        opts.on("-f", "--force", "Rebuild frameworks evan if no code change is detected") do |o|
+        opts.on("-f", "--force", "Rebuild items even when no code change is detected") do |o|
           OPTIONS[:force_rebuild] = false
         end
         opts.on("-w", "--allow-warnings", "Allow warnings") do |o|
@@ -125,7 +125,7 @@ Usage:
         
     $ pod_builder update [OPTIONS]
 
-      Rebuild frameworks that are outdated
+      Rebuild items that are outdated
         
 Options:
 "        
@@ -135,7 +135,7 @@ Options:
         opts.on("-w", "--allow-warnings", "Allow warnings") do |o|
           OPTIONS[:allow_warnings] = o
         end
-        opts.on("-r", "--dry", "Determine which frameworks need update") do |o|
+        opts.on("-r", "--dry", "Determine which items need to be updated") do |o|
           OPTIONS[:dry_run] = o
         end
         opts.on("-d", "--debug", "Don't clean build folder") do |o|
@@ -230,7 +230,7 @@ Usage:
         
     $ pod_builder clean
 
-      Remove unused framework, dSYM and source folders.
+      Remove unused prebuild data, dSYM and source folders.
         
 Options:
 "         
@@ -250,7 +250,7 @@ Usage:
         
     $ pod_builder install_sources
 
-      Install source of prebuilt pods to be able to step into and debug framework's code.
+      Install source of prebuilt pods to be able to step into and debug prebuilt's code.
 
 "         
       end,

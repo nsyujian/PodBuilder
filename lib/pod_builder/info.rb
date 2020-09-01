@@ -7,7 +7,7 @@ module PodBuilder
       result = {}
       name = nil
 
-      Dir.glob(PodBuilder::prebuiltpath("**/#{Configuration.framework_info_filename}")).each do |json_path|         
+      Dir.glob(PodBuilder::prebuiltpath("**/#{Configuration.prebuilt_info_filename}")).each do |json_path|         
         name, prebuilt_info = prebuilt_info(json_path)
         result[name] = prebuilt_info
       end
