@@ -307,46 +307,12 @@ module PodBuilder
       def self.clean_frameworks_folder(buildable_items)
         puts "Cleaning framework folder".yellow
 
-        expected_frameworks = buildable_items.map { |x| "#{x.module_name}.framework" }
-        expected_frameworks += buildable_items.map { |x| x.vendored_frameworks }.flatten.map { |x| File.basename(x) }
-        expected_frameworks.uniq!
-
-        existing_frameworks = Dir.glob(PodBuilder::prebuiltpath("**/*.framework"))
-
-        existing_frameworks.each do |existing_framework|
-          existing_framework_name = File.basename(existing_framework)
-          if !expected_frameworks.include?(existing_framework_name)
-            puts "Cleanining up `#{existing_framework_name}`, no longer found among dependencies".blue
-            PodBuilder::safe_rm_rf(existing_framework)
-
-            framework_dir = File.dirname(existing_framework)
-            podspecs = Dir.glob("#{framework_dir}/*.podspec")
-            podspecs.each { |t| FileUtils.rm(t) }
-          end
-        end
-
-        expected_folder_names = buildable_items.map(&:root_name).uniq
-
-        # Remove folders that are empty (ignoring hidden files) or that are not among buildable_items
-        folders = Dir.glob(PodBuilder::prebuiltpath("*")).select { |t| File.directory?(t) }
-        folders.each do |folder|
-          if Dir.glob("#{folder}/*").count == 0
-            puts "Cleanining up empty folder `#{folder}`".blue
-            PodBuilder::safe_rm_rf(folder)
-          end
-
-          unless expected_folder_names.include?(File.basename(folder))
-            puts "Cleanining unreferenced folder `#{folder}`".blue
-            PodBuilder::safe_rm_rf(folder)
-          end
-        end
-
-        existing_dsyms = Dir.glob(PodBuilder::dsympath("**/*.dSYM"))
-        existing_dsyms.each do |existing_dsym|
-          existing_dsym_name = File.basename(existing_dsym)
-          if !expected_frameworks.include?(existing_dsym_name.gsub(".dSYM", ""))
-            puts "Cleanining up `#{existing_dsym_name}`, no longer found among dependencies".blue
-            PodBuilder::safe_rm_rf(existing_dsym)
+        root_names = buildable_items.map(&:root_name).uniq
+        Dir.glob(File.join(PodBuilder::prebuiltpath, "*")).each do |path|
+          basename = File.basename(path)
+          unless root_names.include?(basename) 
+            puts "Cleanining up `#{basename}`, no longer found among dependencies".blue
+            PodBuilder::safe_rm_rf(path)
           end
         end
       end

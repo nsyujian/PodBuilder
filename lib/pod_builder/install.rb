@@ -102,8 +102,8 @@ module PodBuilder
   
         install
 
-        add_framework_info_file(podfile_items)
         copy_prebuilt_items(podfile_items)
+        add_framework_info_file(podfile_items)
 
         return license_specifiers
       rescue Exception => e
@@ -226,41 +226,59 @@ module PodBuilder
       end
     end
 
-    def self.add_framework_info_file(podfile_items)
-      swift_version = PodBuilder::system_swift_version
-      Dir.glob(PodBuilder::buildpath_prebuiltpath("*.framework")) do |framework_path|
-        filename_ext = File.basename(framework_path)
-        filename = File.basename(framework_path, ".*")
+    def self.copy_prebuilt_items(podfile_items)
+      FileUtils.mkdir_p(PodBuilder.prebuiltpath)
 
-        specs = podfile_items.select { |x| x.module_name == filename }
-        specs += podfile_items.select { |x| x.vendored_frameworks.map { |x| File.basename(x) }.include?(filename_ext) }
-        if podfile_item = specs.first
-          parent_framework_path = File.expand_path(File.join(framework_path, ".."))
-          podbuilder_file = File.join(parent_framework_path, Configuration.framework_info_filename)
-          entry = podfile_item.entry(true, false)
-
-          data = {}
-          data['entry'] = entry
-          data['is_prebuilt'] = podfile_item.is_prebuilt  
-          if Dir.glob(File.join(framework_path, "Headers/*-Swift.h")).count > 0
-            data['swift_version'] = swift_version
-          end
-          subspecs_deps = specs.map(&:dependency_names).flatten
-          subspec_self_deps = subspecs_deps.select { |x| x.start_with?("#{podfile_item.root_name}/") }
-          data['specs'] = (specs.map(&:name) + subspec_self_deps).uniq
-          data['is_static'] = podfile_item.is_static
-          data['original_compile_path'] = Pathname.new(Configuration.build_path).realpath.to_s
-          data['build_folder_hash'] = build_folder_hash(podfile_item)
-
-          File.write(podbuilder_file, JSON.pretty_generate(data))
-        else
-          raise "\n\nUnable to detect item for framework #{filename}.framework. Please open a bug report!".red
+      root_names = podfile_items.reject(&:is_prebuilt).map(&:root_name).uniq
+      root_names.each do |prebuilt_name|        
+        source_path = PodBuilder::buildpath_prebuiltpath(prebuilt_name)
+        unless File.directory?(source_path)
+          puts "Prebuilt items for #{prebuilt_name} not found".blue
+          next
         end
+
+        PodBuilder::safe_rm_rf(PodBuilder::prebuiltpath(prebuilt_name))
+        FileUtils.cp_r(source_path, PodBuilder::prebuiltpath)
       end
     end
 
-    def self.copy_prebuilt_items
+    def self.add_framework_info_file(podfile_items)
+      swift_version = PodBuilder::system_swift_version
 
+      root_names = podfile_items.reject(&:is_prebuilt).map(&:root_name).uniq
+      root_names.each do |prebuilt_name|        
+        path = PodBuilder::prebuiltpath(prebuilt_name)
+
+        unless File.directory?(path)
+          puts "Prebuilt items for #{prebuilt_name} not found".blue
+          next
+        end
+
+        unless podfile_item = podfile_items.detect { |t| t.name == prebuilt_name } || podfile_items.detect { |t| t.root_name == prebuilt_name }
+          puts "Prebuilt items for #{prebuilt_name} not found #2".blue
+          next
+        end
+
+        podbuilder_file = File.join(path, Configuration.framework_info_filename)
+        entry = podfile_item.entry(true, false)
+
+        data = {}
+        data['entry'] = entry
+        data['is_prebuilt'] = podfile_item.is_prebuilt  
+        if Dir.glob(File.join(path, "#{podfile_item.module_name}/Headers/*-Swift.h")).count > 0
+          data['swift_version'] = swift_version
+        end
+        
+        specs = podfile_items.select { |x| x.module_name == podfile_item.module_name }
+        subspecs_deps = specs.map(&:dependency_names).flatten
+        subspec_self_deps = subspecs_deps.select { |x| x.start_with?("#{prebuilt_name}/") }
+        data['specs'] = (specs.map(&:name) + subspec_self_deps).uniq
+        data['is_static'] = podfile_item.is_static
+        data['original_compile_path'] = Pathname.new(Configuration.build_path).realpath.to_s
+        data['build_folder_hash'] = build_folder_hash(podfile_item)
+
+        File.write(podbuilder_file, JSON.pretty_generate(data))
+      end
     end
 
     def self.init_git(path)
@@ -272,7 +290,7 @@ module PodBuilder
     end
 
     def self.build_folder_hash_in_framework_info_file(framework_path)
-      parent_framework_path = File.expand_path(File.joing(framework_path, ".."))
+      parent_framework_path = File.expand_path(File.join(framework_path, ".."))
       framework_info_path = File.join(framework_path, Configuration.framework_info_filename)
 
       if File.exist?(framework_info_path)
