@@ -16,7 +16,7 @@ module PodBuilder
         podfile_items = Analyze.podfile_items(installer, analyzer).select { |x| !x.is_prebuilt }
         podspec_names = podfile_items.map(&:podspec_name)
 
-        base_path = PodBuilder.prebuiltpath
+        base_path = PodBuilder::prebuiltpath
         framework_files = Dir.glob("#{base_path}/**/*.framework")
         
         framework_files.each do |path|
@@ -29,7 +29,7 @@ module PodBuilder
 
         Command::Clean::clean_sources(podspec_names)
 
-        ARGV << PodBuilder.basepath("Sources")
+        ARGV << PodBuilder::basepath("Sources")
 
         puts "\n\n🎉 done!\n".green
         return 0

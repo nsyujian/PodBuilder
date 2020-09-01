@@ -226,7 +226,7 @@ module PodBuilder
     end
 
     def self.copy_prebuilt_items(podfile_items)
-      FileUtils.mkdir_p(PodBuilder.prebuiltpath)
+      FileUtils.mkdir_p(PodBuilder::prebuiltpath)
 
       root_names = podfile_items.reject(&:is_prebuilt).map(&:root_name).uniq
       root_names.each do |prebuilt_name|        
@@ -289,7 +289,7 @@ module PodBuilder
     end
 
     def self.build_folder_hash_in_prebuilt_info_file(podfile_item)
-      prebuilt_info_path = PodBuilder.prebuiltpath(File.join(podfile_item.root_name, Configuration.prebuilt_info_filename))
+      prebuilt_info_path = PodBuilder::prebuiltpath(File.join(podfile_item.root_name, Configuration.prebuilt_info_filename))
 
       if File.exist?(prebuilt_info_path)
         data = JSON.parse(File.read(prebuilt_info_path))
