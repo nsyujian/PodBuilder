@@ -1,3 +1,5 @@
+# TODO: Add support when building without use_frameworks!
+
 require 'fourflusher'
 require 'colored'
 

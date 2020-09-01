@@ -13,23 +13,23 @@ module PodBuilder
 
         install_update_repo = OPTIONS.fetch(:update_repos, true)
         installer, analyzer = Analyze.installer_at(PodBuilder::basepath, install_update_repo)
-        framework_items = Analyze.podfile_items(installer, analyzer).select { |x| !x.is_prebuilt }
-        podspec_names = framework_items.map(&:podspec_name)
+        podfile_items = Analyze.podfile_items(installer, analyzer).select { |x| !x.is_prebuilt }
+        podspec_names = podfile_items.map(&:podspec_name)
 
-        base_path = PodBuilder::prebuiltpath
+        base_path = PodBuilder.prebuiltpath
         framework_files = Dir.glob("#{base_path}/**/*.framework")
         
         framework_files.each do |path|
           rel_path = Pathname.new(path).relative_path_from(Pathname.new(base_path)).to_s
 
-          if framework_spec = framework_items.detect { |x| x.prebuilt_rel_path == rel_path }
-            update_repo(framework_spec)
+          if podfile_spec = podfile_items.detect { |x| x.prebuilt_rel_path == rel_path }
+            update_repo(podfile_spec)
           end
         end
 
         Command::Clean::clean_sources(podspec_names)
 
-        ARGV << PodBuilder::basepath("Sources")
+        ARGV << PodBuilder.basepath("Sources")
 
         puts "\n\n🎉 done!\n".green
         return 0
