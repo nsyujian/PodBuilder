@@ -239,6 +239,9 @@ module PodBuilder
         PodBuilder::safe_rm_rf(PodBuilder::prebuiltpath(prebuilt_name))
         FileUtils.cp_r(source_path, PodBuilder::prebuiltpath)
       end
+
+      FileUtils.mkdir_p(PodBuilder::dsympath)
+      FileUtils.cp_r(PodBuilder::buildpath_dsympath, PodBuilder::basepath)
     end
 
     def self.add_prebuilt_info_file(podfile_items)
