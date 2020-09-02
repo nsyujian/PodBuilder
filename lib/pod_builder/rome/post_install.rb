@@ -52,10 +52,16 @@ module PodBuilder
         File.write(device_swift_header_path, merged_content)
       end
 
-      source_lib = File.dirname(device_framework_lib)
+      # Merge device framework into simulator framework (so that e.g swift Module folder is merged) 
+      # letting device framework files overwrite simulator ones
+      FileUtils.cp_r(File.join(device_framework_lib, "."), simulator_framework_lib) 
+      source_lib = File.dirname(simulator_framework_lib)
 
       FileUtils.mv source_lib, build_dir, :force => true
     end
+
+    FileUtils.rm_rf("#{build_dir}/#{configuration}-#{device}")
+    FileUtils.rm_rf("#{build_dir}/#{configuration}-#{simulator}")
   end
 
   def self.xcodebuild(sandbox, target, sdk='macosx', deployment_target=nil, configuration, deterministic_build, exclude_archs)
@@ -183,7 +189,7 @@ Pod::HooksManager.register('podbuilder-rome', :post_install) do |installer_conte
       root_name = spec.name.split("/").first
       # Make sure the device target overwrites anything in the simulator build, otherwise iTunesConnect
       # can get upset about Info.plist containing references to the simulator SDK
-      frameworks = Pathname.glob("build/*/#{root_name}/*.framework").reject { |f| f.to_s =~ /Pods[^.]+\.framework/ }
+      frameworks = Pathname.glob("build/#{root_name}/*.framework").reject { |f| f.to_s =~ /Pods[^.]+\.framework/ }
 
       consumer = spec.consumer(umbrella.platform_name)
       file_accessor = Pod::Sandbox::FileAccessor.new(sandbox.pod_dir(spec.root.name), consumer)
@@ -193,7 +199,9 @@ Pod::HooksManager.register('podbuilder-rome', :post_install) do |installer_conte
 
       destination = File.join(base_destination, root_name)
       FileUtils.mkdir_p(destination)
-      (frameworks + resources).each do |file|
+
+      files = frameworks + resources
+      files.each do |file|
         FileUtils.cp_r file, destination
       end    
     end

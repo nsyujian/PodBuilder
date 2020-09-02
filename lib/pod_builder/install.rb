@@ -106,24 +106,28 @@ module PodBuilder
         copy_prebuilt_items(podfile_items)
         add_prebuilt_info_file(podfile_items)
 
+        licenses = license_specifiers()
+
         if !OPTIONS.has_key?(:debug)
           PodBuilder::safe_rm_rf(Configuration.build_path)
         end  
 
-        return license_specifiers
+        return licenses
       rescue Exception => e
-        if ENV['DEBUGGING']
-          system("xed #{Configuration.build_path}/Pods")  
-        else
-          confirm = ask("\n\nOh no! Something went wrong during prebuild phase! Do you want to open the prebuild project to debug the error, you will need to add and run the Pods-Dummy scheme? [Y/N] ".red) { |yn| yn.limit = 1, yn.validate = /[yn]/i }
-          if confirm.downcase == 'y'
+        if File.directory?("#{Configuration.build_path}/Pods/Pods.xcodeproj")
+          if ENV['DEBUGGING']
             system("xed #{Configuration.build_path}/Pods")  
+          else
+            confirm = ask("\n\nOh no! Something went wrong during prebuild phase! Do you want to open the prebuild project to debug the error, you will need to add and run the Pods-Dummy scheme? [Y/N] ".red) { |yn| yn.limit = 1, yn.validate = /[yn]/i }
+            if confirm.downcase == 'y'
+              system("xed #{Configuration.build_path}/Pods")  
+            end
           end
         end
 
         raise e
-      ensure
-        FileUtils.rm(lock_file)
+      ensure        
+        FileUtils.rm(lock_file) if File.exist?(lock_file)
       end
     end
 
@@ -244,6 +248,9 @@ module PodBuilder
         unless File.directory?(source_path)
           puts "Prebuilt items for #{prebuilt_name} not found".blue
           next
+        end
+        if Dir.empty?(source_path)
+          next # When using prebuilt items we end up with empty folders
         end
 
         PodBuilder::safe_rm_rf(PodBuilder::prebuiltpath(prebuilt_name))
