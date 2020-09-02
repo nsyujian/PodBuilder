@@ -1,5 +1,6 @@
 require 'digest'
 require 'colored'
+require 'highline/import'
 
 # The following begin/end clause contains a set of monkey patches of the original CP implementation
 
@@ -105,15 +106,24 @@ module PodBuilder
         copy_prebuilt_items(podfile_items)
         add_prebuilt_info_file(podfile_items)
 
-        return license_specifiers
-      rescue Exception => e
-        raise e
-      ensure
-        FileUtils.rm(lock_file)
-
         if !OPTIONS.has_key?(:debug)
           PodBuilder::safe_rm_rf(Configuration.build_path)
         end  
+
+        return license_specifiers
+      rescue Exception => e
+        if ENV['DEBUGGING']
+          system("xed #{Configuration.build_path}/Pods")  
+        else
+          confirm = ask("\n\nOh no! Something went wrong during prebuild phase! Do you want to open the prebuild project to debug the error, you will need to add and run the Pods-Dummy scheme? [Y/N] ".red) { |yn| yn.limit = 1, yn.validate = /[yn]/i }
+          if confirm.downcase == 'y'
+            system("xed #{Configuration.build_path}/Pods")  
+          end
+        end
+
+        raise e
+      ensure
+        FileUtils.rm(lock_file)
       end
     end
 
