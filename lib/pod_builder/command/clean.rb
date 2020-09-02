@@ -37,6 +37,7 @@ module PodBuilder
           dsym_basename = File.basename(path, ".*")
           dsym_basename.gsub!(/\.framework$/, "")
           unless module_names.include?(dsym_basename)
+            puts "Cleanining up `#{dsym_basename}`, no longer found among dependencies".blue
             PodBuilder::safe_rm_rf(path)
           end
         end
