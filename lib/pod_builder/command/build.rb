@@ -123,75 +123,6 @@ module PodBuilder
 
       private
 
-      # def self.buildable_dependencies(pod, buildable_items)
-      #   deps = []
-
-      #   pod.dependency_names.each do |dependency|
-      #     buildable_pods = buildable_items.select { |t| t.root_name == dependency }
-      #     if buildable_pods.any? { |t| t.source_files.count > 0 }
-      #       deps.push(dependency)
-      #     end
-      #   end
-
-      #   return deps
-      # end
-
-      # def self.expected_common_dependencies(pods_to_build, buildable_items)
-      #   warned_expected_pod_list = []
-      #   expected_pod_list = []
-      #   errors = []
-
-      #   pods_to_build.each do |pod_to_build|
-      #     buildable_dependencies(pod_to_build, buildable_items).each do |dependency|
-      #       unless buildable_items.detect { |x| x.root_name == dependency || x.name == dependency } != nil
-      #         next
-      #       end
-
-      #       buildable_items.each do |buildable_pod|
-      #         unless !buildable_dependencies(pod_to_build, buildable_items).include?(buildable_pod.name)
-      #           next
-      #         end
-
-      #         if buildable_dependencies(buildable_pod, buildable_items).include?(dependency) && !buildable_pod.has_subspec(dependency) && !buildable_pod.has_common_spec(dependency) then
-      #           expected_pod_list += pods_to_build.map(&:root_name) + [buildable_pod.root_name]
-      #           expected_pod_list.uniq!
-
-      #           expected_list = expected_pod_list.join(" ")
-      #           if !warned_expected_pod_list.include?(expected_list)
-      #             errors.push("Can't build #{pod_to_build.name} because it has common dependencies (#{dependency}) with #{buildable_pod.name}.\n\nUse `pod_builder build #{expected_list}` instead or use `pod_builder build -a #{pod_to_build.name}` to automatically resolve missing dependencies\n\n")
-      #             errors.uniq!
-      #             warned_expected_pod_list.push(expected_list)
-
-      #             if OPTIONS.has_key?(:auto_resolve_dependencies)
-      #               puts "`#{pod_to_build.name}` has the following dependencies:\n`#{buildable_dependencies(pod_to_build, buildable_items).join("`, `")}`\nWhich are in common with `#{buildable_pod.name}` and requires it to be recompiled\n\n".yellow
-      #             end
-      #           end
-      #         end
-      #       end
-      #     end
-      #   end
-
-      #   return expected_pod_list, errors
-      # end
-
-      # def self.expected_parent_dependencies(pods_to_build, buildable_items)
-      #   expected_pod_list = []
-      #   errors = []
-
-      #   buildable_items_dependencies = buildable_items.map(&:dependency_names).flatten.uniq
-      #   pods_to_build.each do |pod_to_build|
-      #     if buildable_items_dependencies.include?(pod_to_build.name)
-      #       parent = buildable_items.detect { |x| x.dependency_names.include?(pod_to_build.name) }
-
-      #       expected_pod_list += (pods_to_build + [parent]).map(&:root_name)
-      #       expected_pod_list.uniq!
-      #       errors.push("Can't build #{pod_to_build.name} because it is a dependency of #{parent.name}.\n\nUse `pod_builder build #{expected_pod_list.join(" ")}` instead\n\n")
-      #     end
-      #   end
-
-      #   return expected_pod_list, errors
-      # end
-
       def self.check_not_building_subspecs(pods_to_build)
         pods_to_build.each do |pod_to_build|
           if pod_to_build.include?("/")
@@ -276,28 +207,6 @@ module PodBuilder
       def self.resolve_pods_to_build(argument_pods, buildable_items)
         pods_to_build = []
         
-        # fns = [method(:expected_common_dependencies), method(:expected_parent_dependencies)]
-        # fns.each do |fn|
-        #   loop do
-        #     pods_to_build = buildable_items.select { |x| argument_pods.include?(x.root_name) }
-        #     pods_to_build += other_subspecs(pods_to_build, buildable_items)
-        #     tmp_buildable_items = buildable_items - pods_to_build
-
-        #     expected_pods, errors = fn.call(pods_to_build, tmp_buildable_items)
-        #     if expected_pods.count > 0
-        #       if !OPTIONS.has_key?(:auto_resolve_dependencies) && expected_pods.count > 0
-        #         raise "\n\n#{errors.join("\n")}".red
-        #       else
-        #         argument_pods = expected_pods.uniq
-        #       end  
-        #     end
-            
-        #     if !OPTIONS.has_key?(:auto_resolve_dependencies) || expected_pods.count == 0
-        #       break
-        #     end
-        #   end  
-        # end
-
         pods_to_build = buildable_items.select { |x| argument_pods.include?(x.root_name) }
         pods_to_build += other_subspecs(pods_to_build, buildable_items)
 
