@@ -12,38 +12,38 @@ module PodBuilder
         installer, analyzer = Analyze.installer_at(PodBuilder::basepath, install_update_repo)
         all_buildable_items = Analyze.podfile_items(installer, analyzer)
 
-        podspec_names = all_buildable_items.map(&:podspec_name)
-        rel_paths = all_buildable_items.map { |t| "#{t.root_name}/#{t.prebuilt_rel_path}" }
-        rel_paths += all_buildable_items.map { |t| t.vendored_frameworks.map { |u| "#{t.root_name}/#{File.basename(u)}" }}.flatten
-        rel_paths.uniq!
-
-        base_path = PodBuilder::prebuiltpath
-        framework_files = Dir.glob("#{base_path}/**/*.framework")
-        puts "Looking for unused frameworks".yellow
-        clean(framework_files, base_path, rel_paths)
-
-        rel_paths.map! { |x| "#{File.basename(x)}.dSYM"}
-
-        Configuration.supported_platforms.each do |platform|
-          base_path = PodBuilder::dsympath(platform)
-          dSYM_files = Dir.glob("#{base_path}/**/*.dSYM")
-          puts "Looking for #{platform} unused dSYMs".yellow    
-          clean(dSYM_files, base_path, rel_paths)  
-        end
-
-        puts "Looking for unused sources".yellow
-        clean_sources(podspec_names)
+        prebuilt_items(all_buildable_items)
+        install_sources(all_buildable_items)
 
         puts "\n\n🎉 done!\n".green
         return 0
       end
+      
+      def self.prebuilt_items(buildable_items)
+        puts "Cleaning prebuilt folder".yellow
 
-      def self.clean_sources(podspec_names)        
+        root_names = buildable_items.map(&:root_name).uniq
+        Dir.glob(File.join(PodBuilder::prebuiltpath, "*")).each do |path|
+          basename = File.basename(path)
+          unless root_names.include?(basename) 
+            puts "Cleanining up `#{basename}`, no longer found among dependencies".blue
+            PodBuilder::safe_rm_rf(path)
+          end
+        end
+
+        puts "Cleaning dSYM folder".yellow
+        puts "TODO"
+      end
+
+      def self.install_sources(buildable_items)        
+        puts "Looking for unused sources".yellow
+
+        podspec_names = buildable_items.map(&:root_name).uniq
+
         base_path = PodBuilder::basepath("Sources")
 
-        repo_paths = Dir.glob("#{base_path}/*")
-
         paths_to_delete = []
+        repo_paths = Dir.glob("#{base_path}/*")
         repo_paths.each do |path|
           podspec_name = File.basename(path)
 
@@ -59,37 +59,6 @@ module PodBuilder
           if confirm.downcase == 'y'
             PodBuilder::safe_rm_rf(path)
           end
-        end
-      end
-
-      private
-
-      def self.clean(files, base_path, rel_paths)
-        files = files.map { |x| [Pathname.new(x).relative_path_from(Pathname.new(base_path)).to_s, x] }.to_h
-
-        paths_to_delete = []
-        files.each do |rel_path, path|
-          if rel_paths.include?(rel_path)
-            next
-          end
-
-          paths_to_delete.push(path)
-        end
-
-        paths_to_delete.each do |path|
-          confirm = ask("\n#{path} unused.\nDelete it? [Y/N] ") { |yn| yn.limit = 1, yn.validate = /[yn]/i }
-          if confirm.downcase == 'y'
-            PodBuilder::safe_rm_rf(path)
-          end
-        end
-
-        if File.directory?(base_path)
-          Dir.chdir(base_path) do
-            # Before deleting anything be sure we're in a git repo
-            h = `git rev-parse --show-toplevel`.strip()
-            raise "\n\nNo git repository found in current folder `#{Dir.pwd}`!\n".red if h.empty?    
-            system("find . -type d -empty -delete") # delete empty folders
-          end  
         end
       end
     end

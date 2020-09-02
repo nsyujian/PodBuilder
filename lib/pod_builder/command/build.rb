@@ -92,7 +92,7 @@ module PodBuilder
           FileUtils.rm_f(PodBuilder::basepath("Podfile.lock"))
         end
 
-        clean_prebuilt_folder(all_buildable_items)
+        Clean::prebuilt_items(all_buildable_items)
 
         Licenses::write(licenses, all_buildable_items)
 
@@ -302,20 +302,7 @@ module PodBuilder
         pods_to_build += other_subspecs(pods_to_build, buildable_items)
 
         return pods_to_build
-      end
-
-      def self.clean_prebuilt_folder(buildable_items)
-        puts "Cleaning prebuilt folder".yellow
-
-        root_names = buildable_items.map(&:root_name).uniq
-        Dir.glob(File.join(PodBuilder::prebuiltpath, "*")).each do |path|
-          basename = File.basename(path)
-          unless root_names.include?(basename) 
-            puts "Cleanining up `#{basename}`, no longer found among dependencies".blue
-            PodBuilder::safe_rm_rf(path)
-          end
-        end
-      end
+      end      
     end
   end
 end
