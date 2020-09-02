@@ -16,7 +16,6 @@ module PodBuilder
 
     spec_names = target.specs.map { |spec| [spec.root.name, spec.root.module_name] }.uniq
     spec_names.each do |root_name, module_name|
-      executable_path = "#{build_dir}/#{root_name}"
       device_lib = "#{build_dir}/#{configuration}-#{device}/#{root_name}/#{module_name}.framework/#{module_name}"
       device_framework_lib = File.dirname(device_lib)
       device_swift_header_path = "#{device_framework_lib}/Headers/#{module_name}-Swift.h"
@@ -37,8 +36,7 @@ module PodBuilder
        `xcrun lipo -remove arm64 #{simulator_lib} -o #{simulator_lib}`
       end
 
-      lipo_log = `xcrun lipo -create -output #{executable_path} #{device_lib} #{simulator_lib}`
-      puts lipo_log unless File.exist?(executable_path)
+      raise "Lipo failed on #{device_lib}" unless system("xcrun lipo -create -output #{device_lib} #{device_lib} #{simulator_lib}")
 
       # Merge swift headers as per Xcode 10.2 release notes
       if File.exist?(device_swift_header_path) && File.exist?(simulator_swift_header_path)
@@ -54,10 +52,9 @@ module PodBuilder
         File.write(device_swift_header_path, merged_content)
       end
 
-      FileUtils.mv executable_path, device_lib, :force => true
-      FileUtils.mv device_framework_lib, build_dir, :force => true
-      FileUtils.rm simulator_lib if File.file?(simulator_lib)
-      FileUtils.rm device_lib if File.file?(device_lib)
+      source_lib = File.dirname(device_framework_lib)
+
+      FileUtils.mv source_lib, build_dir, :force => true
     end
   end
 
