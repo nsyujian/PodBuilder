@@ -32,7 +32,15 @@ module PodBuilder
         end
 
         puts "Cleaning dSYM folder".yellow
-        puts "TODO"
+        module_names = buildable_items.map(&:module_name).uniq
+        Dir.glob(File.join(PodBuilder::dsympath, "**/*.dSYM")).each do |path|
+          dsym_basename = File.basename(path, ".*")
+          dsym_basename.gsub!(/\.framework$/, "")
+          unless module_names.include?(dsym_basename)
+            PodBuilder::safe_rm_rf(path)
+          end
+        end
+
       end
 
       def self.install_sources(buildable_items)        
