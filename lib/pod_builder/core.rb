@@ -19,6 +19,10 @@ module PodBuilder
   @@xcodeproj_path = nil
   @@xcodeworkspace_path = nil
 
+  def self.git_rootpath
+    return `git rev-parse --show-toplevel`.strip()
+  end
+
   def self.safe_rm_rf(path)
     unless File.exist?(path)
       return
@@ -34,8 +38,8 @@ module PodBuilder
 
     Dir.chdir(path)
 
-    h = `git rev-parse --show-toplevel`.strip()
-    raise "\n\nNo git repository found in '#{path}', can't delete files!\n".red if h.empty? && !path.start_with?(Configuration.build_base_path)
+    rootpath = git_rootpath()
+    raise "\n\nNo git repository found in '#{path}', can't delete files!\n".red if rootpath.empty? && !path.start_with?(Configuration.build_base_path)
 
     FileUtils.rm_rf(path)
 
@@ -43,6 +47,12 @@ module PodBuilder
       Dir.chdir(current_dir)
     else
       Dir.chdir(basepath)
+    end
+  end
+
+  def self.gitignoredfiles
+    Dir.chdir(git_rootpath) do
+      return `git status --ignored -s | grep "^\!\!" | cut -c4-`.strip().split("\n")
     end
   end
   
@@ -205,8 +215,8 @@ module PodBuilder
   private 
   
   def self.home
-    h = `git rev-parse --show-toplevel`.strip()
-    raise "\n\nNo git repository found in current folder `#{Dir.pwd}`!\n".red if h.empty?
-    return h
+    rootpath = git_rootpath
+    raise "\n\nNo git repository found in current folder `#{Dir.pwd}`!\n".red if rootpath.empty?
+    return rootpath
   end
 end

@@ -180,12 +180,14 @@ module PodBuilder
 
       podfile_content = File.read(podfile_path)
 
+      gitignored_files = PodBuilder::gitignoredfiles
+
       # Replace prebuilt entries in Podfile for Pods that have no changes in source code which will avoid rebuilding them
       items = podfile_items.group_by { |t| t.root_name }.map { |k, v| v.first } # Return one podfile_item per root_name
       items.each do |item|
         podspec_path = item.prebuilt_podspec_path
         if last_build_folder_hash = build_folder_hash_in_prebuilt_info_file(item)
-          if last_build_folder_hash == build_folder_hash(item)
+          if last_build_folder_hash == build_folder_hash(item, gitignored_files)
             puts "No changes detected to '#{item.root_name}', will skip rebuild".blue
             podfile_items.select { |t| t.root_name == item.root_name }.each do |replace_item|
               replace_regex = "pod '#{Regexp.quote(replace_item.name)}', .*"
@@ -265,6 +267,8 @@ module PodBuilder
     end
 
     def self.add_prebuilt_info_file(podfile_items)
+      gitignored_files = PodBuilder::gitignoredfiles
+
       swift_version = PodBuilder::system_swift_version
 
       root_names = podfile_items.reject(&:is_prebuilt).map(&:root_name).uniq
@@ -297,7 +301,7 @@ module PodBuilder
         data['specs'] = (specs.map(&:name) + subspec_self_deps).uniq
         data['is_static'] = podfile_item.is_static
         data['original_compile_path'] = Pathname.new(Configuration.build_path).realpath.to_s
-        data['build_folder_hash'] = build_folder_hash(podfile_item)
+        data['build_folder_hash'] = build_folder_hash(podfile_item, gitignored_files)
 
         File.write(podbuilder_file, JSON.pretty_generate(data))
       end
@@ -322,18 +326,36 @@ module PodBuilder
       end
     end
 
-    def self.build_folder_hash(podfile_item)
+    def self.build_folder_hash(podfile_item, exclude_files)
       if podfile_item.is_development_pod
         if Pathname.new(podfile_item.path).absolute?
           item_path = podfile_item.path
         else 
           item_path = PodBuilder::basepath(podfile_item.path)
         end
-      else
-        item_path = "#{Configuration.build_path}/Pods/#{podfile_item.root_name}"
-      end
 
-      return `find '#{item_path}' -type f -print0 | sort -z | xargs -0 shasum | shasum | cut -d' ' -f1`.strip()
+        rootpath = PodBuilder::git_rootpath
+        file_hashes = []
+        Dir.glob("#{item_path}/**/*", File::FNM_DOTMATCH) do |path|
+          unless File.file?(path)
+            next
+          end
+          
+          path = File.expand_path(path)
+          rel_path = path.gsub(rootpath, "")[1..]
+          unless exclude_files.include?(rel_path)
+            file_hashes.push(Digest::MD5.hexdigest(File.read(path)))
+          else
+            puts path
+          end
+        end
+
+        return Digest::MD5.hexdigest(file_hashes.join)
+      else
+        # Pod folder might be under .gitignore
+        item_path = "#{Configuration.build_path}/Pods/#{podfile_item.root_name}"
+        return `find '#{item_path}' -type f -print0 | sort -z | xargs -0 shasum | shasum | cut -d' ' -f1`.strip()
+      end
     end
     
     def self.podfile_path_transform(path)
