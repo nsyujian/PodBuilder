@@ -3,39 +3,23 @@
 
 platform :ios, '9.0'
 
-target 'PodBuilderExample' do
-  use_frameworks!
+use_frameworks!
 
+target 'PodBuilderExample' do
   # Pods for PodBuilderExample
-  pod 'Alamofire', :path => 'PodBuilder/Prebuilt' # pb<Alamofire>
-  pod 'AFNetworking', :path => 'PodBuilder/Prebuilt' # pb<AFNetworking>
-  pod 'Loop', :path => 'PodBuilder/Prebuilt' # pb<Loop>
-  pod 'ReactiveSwift', :path => 'PodBuilder/Prebuilt' # pb<Loop>
+  pod 'Alamofire', :path => 'PodBuilder/Prebuilt/Alamofire' # pb<Alamofire>
+  pod 'AFNetworking' # Objective-C sample
+  pod 'ReactiveSwift', :path => 'PodBuilder/Prebuilt/ReactiveSwift' # pb<Loop>
+  pod 'Loop', :path => 'PodBuilder/Prebuilt/Loop' # pb<Loop>
 
   # Firebase
-  pod 'Firebase'
-  pod 'FirebaseCore', :path => 'PodBuilder/Prebuilt' # pb<FirebaseCore>
-  pod 'GoogleUtilities', :path => 'PodBuilder/Prebuilt' # pb<FirebaseCore>
-  pod 'FirebaseCoreDiagnostics', :path => 'PodBuilder/Prebuilt' # pb<FirebaseCore>
-  pod 'PromisesObjC', :path => 'PodBuilder/Prebuilt' # pb<FirebaseCore>
-  pod 'GoogleDataTransport', :path => 'PodBuilder/Prebuilt' # pb<FirebaseCore>
-  pod 'nanopb', :path => 'PodBuilder/Prebuilt' # pb<FirebaseCore>
-  pod 'FirebaseDatabase', :path => 'PodBuilder/Prebuilt' # pb<FirebaseDatabase>
-  pod 'leveldb-library', :path => 'PodBuilder/Prebuilt' # pb<FirebaseDatabase>
-  pod 'GoogleUtilities', :path => 'PodBuilder/Prebuilt' # pb<FirebaseDatabase>
-  pod 'FirebaseAuth', :path => 'PodBuilder/Prebuilt' # pb<FirebaseAuth>
-  pod 'GoogleUtilities', :path => 'PodBuilder/Prebuilt' # pb<FirebaseAuth>
-  pod 'GTMSessionFetcher', :path => 'PodBuilder/Prebuilt' # pb<FirebaseAuth>
-  pod 'FirebaseFirestore', :path => 'PodBuilder/Prebuilt' # pb<FirebaseFirestore>
-  pod 'abseil', :path => 'PodBuilder/Prebuilt' # pb<FirebaseFirestore>
-  pod 'gRPC-C++', :path => 'PodBuilder/Prebuilt' # pb<FirebaseFirestore>
-  pod 'GoogleUtilities', :path => 'PodBuilder/Prebuilt' # pb<FirebaseFirestore>
-  pod 'gRPC-Core', :path => 'PodBuilder/Prebuilt' # pb<FirebaseFirestore>
-  pod 'BoringSSL-GRPC', :path => 'PodBuilder/Prebuilt' # pb<FirebaseFirestore>
-  pod 'FirebasePerformance'
-  pod 'FirebaseCrashlytics', :path => 'PodBuilder/Prebuilt' # pb<FirebaseCrashlytics>
-  pod 'FirebaseInstallations', :path => 'PodBuilder/Prebuilt' # pb<FirebaseCrashlytics>
-  pod 'GoogleUtilities', :path => 'PodBuilder/Prebuilt' # pb<FirebaseCrashlytics>
+  # pod 'Firebase'
+  # pod 'FirebaseCore'
+  # pod 'FirebaseDatabase'
+  # pod 'FirebaseAuth'
+  # pod 'FirebaseFirestore'
+  # pod 'FirebasePerformance'
+  # pod 'FirebaseCrashlytics'
 end
 
 pre_install do |installer|
@@ -43,7 +27,9 @@ pre_install do |installer|
    
 end
 
+
 post_install do |installer|
   require 'pod_builder/podfile/post_actions'
-  PodBuilder::Podfile::pod_builder_post_process   
+  PodBuilder::Podfile::pod_builder_post_process
+   
 end

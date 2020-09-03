@@ -9,13 +9,13 @@ target 'PodBuilderExample' do
   pod 'Loop' # Assets
 
   # Firebase
-  pod 'Firebase'
-  pod 'FirebaseCore'
-  pod 'FirebaseDatabase'
-  pod 'FirebaseAuth'
-  pod 'FirebaseFirestore'
-  pod 'FirebasePerformance'
-  pod 'FirebaseCrashlytics'
+  # pod 'Firebase'
+  # pod 'FirebaseCore'
+  # pod 'FirebaseDatabase'
+  # pod 'FirebaseAuth'
+  # pod 'FirebaseFirestore'
+  # pod 'FirebasePerformance'
+  # pod 'FirebaseCrashlytics'
 end
 
 pre_install do |installer|

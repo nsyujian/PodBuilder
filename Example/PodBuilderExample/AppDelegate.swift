@@ -8,7 +8,6 @@
 
 import UIKit
 import Alamofire
-import Firebase
 import Loop
 import AFNetworking
 
