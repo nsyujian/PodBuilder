@@ -401,7 +401,7 @@ module PodBuilder
       if absolute_path 
         return podspec_path
       else
-        pod_path = Pathname.new(podspec_path).relative_path_from(Pathname.new(PodBuilder::project_path)).to_s
+        pod_path = Pathname.new(podspec_path).relative_path_from(Pathname.new(PodBuilder::basepath)).to_s
       end
     end
 
