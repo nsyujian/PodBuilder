@@ -17,7 +17,8 @@ module PodBuilder
 
       platform = analyzer.instance_variable_get("@result").targets.first.platform
 
-      install_using_frameworks = analyzer.podfile.root_target_definitions.map(&:uses_frameworks?).uniq.first
+      install_using_frameworks = install_using_frameworks(analyzer)      
+
       podfile.sub!("%%%use_frameworks%%%", install_using_frameworks ? "use_frameworks!" : "") 
 
       podfile.sub!("%%%platform_name%%%", platform.name.to_s)
@@ -675,6 +676,22 @@ module PodBuilder
       Configuration.react_native_project = true
 
       return podfile_content
+    end
+
+    def self.install_using_frameworks(analyzer)
+      target_settings = analyzer.podfile.target_definition_list.map(&:uses_frameworks?).uniq
+      if target_settings.count == 1
+        if target_settings.first == false
+          raise "\n\nOnly framework packaging currently supported. Please add 'use_frameworks!' at Podfile root level (not nested in targets)".red
+        end
+        return target_settings.first
+      elsif target_settings.count > 1
+        raise "\n\n'use_frameworks!' should be declared only once at Podfile root level (not nested in targets)".red
+      else
+        raise "\n\nFailed detecting use_frameworks!"
+      end
+
+      return true
     end
   end
 end
