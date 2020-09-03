@@ -181,7 +181,7 @@ module PodBuilder
           next
         end
 
-        if pod_name = pod_definition_in(line, true)          
+        if pod_name = pod_definition_in(line, true)      
           if podfile_item = all_buildable_items.detect { |x| x.name == pod_name }
             marker = podfile_item.prebuilt_marker()
 
@@ -199,7 +199,7 @@ module PodBuilder
               dep_item = all_buildable_items.detect { |x| x.name == dep.name }
 
               if File.exist?(dep_item.prebuilt_podspec_path) && !dep_item.is_prebuilt 
-                pod_name = dep_item.prebuilt_entry(false)
+                pod_name = dep_item.prebuilt_entry(false, false)
                 prebuilt_lines.push("#{line.detect_indentation}#{pod_name}#{marker}\n")
               end
 

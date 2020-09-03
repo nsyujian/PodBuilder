@@ -49,7 +49,7 @@ module Pod
         pod_entries = pod_entries.uniq.sort_by { |t| t.name }
 
         prebuild_entries.each do |pod|
-          target_s += "#{child_indentation}#{pod.prebuilt_entry(false)}\n"
+          target_s += "#{child_indentation}#{pod.prebuilt_entry(false, false)}\n"
         end
         pod_entries.each do |pod|
           target_s += "#{child_indentation}#{pod.entry(true, false)}\n"
