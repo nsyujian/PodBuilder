@@ -681,7 +681,7 @@ module PodBuilder
     def self.install_using_frameworks(analyzer)
       target_settings = analyzer.podfile.target_definition_list.map(&:uses_frameworks?).uniq
       if target_settings.count == 1
-        if target_settings.first == false
+        if target_settings.first == false && ENV['DEBUGGING'].nil?
           raise "\n\nOnly framework packaging currently supported. Please add 'use_frameworks!' at Podfile root level (not nested in targets)".red
         end
         return target_settings.first
