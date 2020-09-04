@@ -4,7 +4,7 @@ require 'fourflusher'
 require 'colored'
 
 module PodBuilder
-  def self.build_for_iosish_platform(sandbox, build_dir, target, device, simulator, configuration, deterministic_build, build_for_apple_silicon)
+  def self.build_for_iosish_platform_framework(sandbox, build_dir, target, device, simulator, configuration, deterministic_build, build_for_apple_silicon)
     raise "\n\nApple silicon hardware still unsupported since it requires to migrate to xcframeworks".red if build_for_apple_silicon
     
     dsym_device_folder = File.join(build_dir, "dSYM", device)
@@ -18,7 +18,7 @@ module PodBuilder
     xcodebuild(sandbox, target_label, device, deployment_target, configuration, deterministic_build, [])
     excluded_archs = build_for_apple_silicon ? [] : ["arm64"]
     xcodebuild(sandbox, target_label, simulator, deployment_target, configuration, deterministic_build, excluded_archs)
-    
+
     spec_names = target.specs.map { |spec| [spec.root.name, spec.root.module_name] }.uniq
     spec_names.each do |root_name, module_name|
       device_base = "#{build_dir}/#{configuration}-#{device}/#{root_name}" 
@@ -76,7 +76,165 @@ module PodBuilder
       FileUtils.rm_rf(simulator_framework_lib)
     end
   end
+
+  def self.build_for_iosish_platform_lib(sandbox, build_dir, target, device, simulator, configuration, deterministic_build, build_for_apple_silicon)
+    raise "\n\nApple silicon hardware still unsupported since it requires to migrate to xcframeworks".red if build_for_apple_silicon
+
+    device_headers_folder = File.join(build_dir, "Headers", device)
+    simulator_headers_folder = File.join(build_dir, "Headers", simulator)
+    FileUtils.mkdir_p(device_headers_folder)
+    FileUtils.mkdir_p(simulator_headers_folder)
+        
+    deployment_target = target.platform_deployment_target
+    target_label = target.cocoapods_target_label
+
+    spec_names = target.specs.map { |spec| [spec.root.name, spec.root.module_name] }.uniq
+
+    xcodebuild(sandbox, target_label, device, deployment_target, configuration, deterministic_build, [])
+    spec_names.each do |root_name, module_name|
+      headers_private = "#{sandbox.headers_root.to_s}/Private/#{root_name}/#{module_name}"
+      headers_public = "#{sandbox.headers_root.to_s}/Public/#{root_name}/#{module_name}"
   
+      device_base = "#{build_dir}/#{configuration}-#{device}/#{root_name}" 
+      device_lib = "#{device_base}/lib#{module_name}.a"
+
+      FileUtils.cp headers_private, device_headers_folder
+      FileUtils.cp headers_public, device_headers_folder
+    end
+
+    excluded_archs = build_for_apple_silicon ? [] : ["arm64"]
+    xcodebuild(sandbox, target_label, simulator, deployment_target, configuration, deterministic_build, excluded_archs)
+    spec_names.each do |root_name, module_name|
+      headers_private = "#{sandbox.headers_root.to_s}/Private/#{root_name}/#{module_name}"
+      headers_public = "#{sandbox.headers_root.to_s}/Public/#{root_name}/#{module_name}"
+  
+      simulator_base = "#{build_dir}/#{configuration}-#{simulator}/#{root_name}"
+      simulator_lib = "#{simulator_base}/lib#{module_name}.a"
+
+      FileUtils.cp headers_private, simulator_headers_folder
+      FileUtils.cp headers_public, simulator_headers_folder
+    end
+
+    spec_names.each do |root_name, module_name|
+      device_headers_private = ""
+      device_headers_public = ""
+      simulator_headers_private = ""
+      simulator_headers_public = ""
+
+      device_base = "#{build_dir}/#{configuration}-#{device}/#{root_name}" 
+      device_lib = "#{device_base}/lib#{module_name}.a"
+      simulator_base = "#{build_dir}/#{configuration}-#{simulator}/#{root_name}"
+      simulator_lib = "#{simulator_base}/lib#{module_name}.a"
+  
+      next unless File.file?(device_lib) && File.file?(simulator_lib)
+
+            # Starting with Xcode 12b3 the simulator binary contains an arm64 slice as well which conflict with the one in the device_lib
+      # when creating the fat library. A naive workaround is to remove the arm64 from the simulator_lib however this is wrong because 
+      # we might actually need to have 2 separated arm64 slices, one for simulator and one for device each built with different
+      # compile time directives (e.g #if targetEnvironment(simulator))
+      #
+      # For the time being we remove the arm64 slice bacause otherwise the `xcrun lipo -create -output ...` would fail.
+      if `xcrun lipo -info #{simulator_lib}`.include?("arm64")
+        `xcrun lipo -remove arm64 #{simulator_lib} -o #{simulator_lib}`
+      end
+      
+      raise "Lipo failed on #{device_lib}" unless system("xcrun lipo -create -output #{device_lib} #{device_lib} #{simulator_lib}")
+      
+      # Merge swift headers as per Xcode 10.2 release notes
+      if File.exist?(device_swift_header_path) && File.exist?(simulator_swift_header_path)
+        device_content = File.read(device_swift_header_path)
+        simulator_content = File.read(simulator_swift_header_path)
+        merged_content = %{
+          #if TARGET_OS_SIMULATOR
+          #{simulator_content}
+          #else
+          #{device_content}
+          #endif
+        }        
+        File.write(device_swift_header_path, merged_content)
+      end
+
+
+    end
+
+
+
+    spec_names = target.specs.map { |spec| [spec.root.name, spec.root.module_name] }.uniq
+    spec_names.each do |root_name, module_name|
+      device_base = "#{build_dir}/#{configuration}-#{device}/#{root_name}" 
+      device_lib = "#{device_base}/#{module_name}.framework/#{module_name}"
+      device_dsym = "#{device_base}/#{module_name}.framework.dSYM"
+      device_framework_lib = File.dirname(device_lib)
+      device_swift_header_path = "#{device_framework_lib}/Headers/#{module_name}-Swift.h"
+      
+      simulator_base = "#{build_dir}/#{configuration}-#{simulator}/#{root_name}"
+      simulator_lib = "#{simulator_base}/#{module_name}.framework/#{module_name}"
+      simulator_dsym = "#{simulator_base}/#{module_name}.framework.dSYM"
+      simulator_framework_lib = File.dirname(simulator_lib)
+      simulator_swift_header_path = "#{simulator_framework_lib}/Headers/#{module_name}-Swift.h"
+      
+      next unless File.file?(device_lib) && File.file?(simulator_lib)
+      
+      # Starting with Xcode 12b3 the simulator binary contains an arm64 slice as well which conflict with the one in the device_lib
+      # when creating the fat library. A naive workaround is to remove the arm64 from the simulator_lib however this is wrong because 
+      # we might actually need to have 2 separated arm64 slices, one for simulator and one for device each built with different
+      # compile time directives (e.g #if targetEnvironment(simulator))
+      #
+      # For the time being we remove the arm64 slice bacause otherwise the `xcrun lipo -create -output ...` would fail.
+      if `xcrun lipo -info #{simulator_lib}`.include?("arm64")
+        `xcrun lipo -remove arm64 #{simulator_lib} -o #{simulator_lib}`
+      end
+      
+      raise "Lipo failed on #{device_lib}" unless system("xcrun lipo -create -output #{device_lib} #{device_lib} #{simulator_lib}")
+      
+      # Merge swift headers as per Xcode 10.2 release notes
+      if File.exist?(device_swift_header_path) && File.exist?(simulator_swift_header_path)
+        device_content = File.read(device_swift_header_path)
+        simulator_content = File.read(simulator_swift_header_path)
+        merged_content = %{
+          #if TARGET_OS_SIMULATOR
+          #{simulator_content}
+          #else
+          #{device_content}
+          #endif
+        }        
+        File.write(device_swift_header_path, merged_content)
+      end
+      
+      # # Merge device framework into simulator framework (so that e.g swift Module folder is merged) 
+      # # letting device framework files overwrite simulator ones
+      # FileUtils.cp_r(File.join(device_framework_lib, "."), simulator_framework_lib) 
+      # source_lib = File.dirname(simulator_framework_lib)
+      
+      # FileUtils.cp_r(source_lib, build_dir)
+      
+      # FileUtils.cp_r(device_dsym, dsym_device_folder) if File.exist?(device_dsym)
+      # FileUtils.cp_r(simulator_dsym, dsym_simulator_folder) if File.exist?(simulator_dsym)
+      
+      # # Remove frameworks leaving dSYMs
+      # FileUtils.rm_rf(device_framework_lib) 
+      # FileUtils.rm_rf(simulator_framework_lib)
+    end
+  end
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
   def self.xcodebuild(sandbox, target, sdk='macosx', deployment_target=nil, configuration, deterministic_build, exclude_archs)
     args = %W(-project #{sandbox.project_path.realdirpath} -scheme #{target} -configuration #{configuration} -sdk #{sdk})
     supported_platforms = { 'iphonesimulator' => 'iOS', 'appletvsimulator' => 'tvOS', 'watchsimulator' => 'watchOS' }
@@ -171,14 +329,18 @@ Pod::HooksManager.register('podbuilder-rome', :post_install) do |installer_conte
   build_dir.rmtree if build_dir.directory?
   targets = installer_context.umbrella_targets.select { |t| t.specs.any? }
   targets.each do |target|
-    case target.platform_name
-    when :ios then PodBuilder::build_for_iosish_platform(sandbox, build_dir, target, 'iphoneos', 'iphonesimulator', configuration, PodBuilder::Configuration.deterministic_build, PodBuilder::Configuration.build_for_apple_silicon)
-    when :osx then PodBuilder::xcodebuild(sandbox, target.cocoapods_target_label, configuration, PodBuilder::Configuration.deterministic_build, PodBuilder::Configuration.build_for_apple_silicon)
-    when :tvos then PodBuilder::build_for_iosish_platform(sandbox, build_dir, target, 'appletvos', 'appletvsimulator', configuration, PodBuilder::Configuration.deterministic_build, PodBuilder::Configuration.build_for_apple_silicon)
-    when :watchos then PodBuilder::build_for_iosish_platform(sandbox, build_dir, target, 'watchos', 'watchsimulator', configuration, PodBuilder::Configuration.deterministic_build, PodBuilder::Configuration.build_for_apple_silicon)
+    case [target.platform_name, uses_frameworks]
+    when [:ios, true] then PodBuilder::build_for_iosish_platform_framework(sandbox, build_dir, target, 'iphoneos', 'iphonesimulator', configuration, PodBuilder::Configuration.deterministic_build, PodBuilder::Configuration.build_for_apple_silicon)
+    when [:osx, true] then PodBuilder::xcodebuild(sandbox, target.cocoapods_target_label, configuration, PodBuilder::Configuration.deterministic_build, PodBuilder::Configuration.build_for_apple_silicon)
+    when [:tvos, true] then PodBuilder::build_for_iosish_platform_framework(sandbox, build_dir, target, 'appletvos', 'appletvsimulator', configuration, PodBuilder::Configuration.deterministic_build, PodBuilder::Configuration.build_for_apple_silicon)
+    when [:watchos, true] then PodBuilder::build_for_iosish_platform_framework(sandbox, build_dir, target, 'watchos', 'watchsimulator', configuration, PodBuilder::Configuration.deterministic_build, PodBuilder::Configuration.build_for_apple_silicon)
+    when [:ios, false] then PodBuilder::build_for_iosish_platform_lib(sandbox, build_dir, target, 'iphoneos', 'iphonesimulator', configuration, PodBuilder::Configuration.deterministic_build, PodBuilder::Configuration.build_for_apple_silicon)
+    when [:osx, false] then PodBuilder::xcodebuild(sandbox, target.cocoapods_target_label, configuration, PodBuilder::Configuration.deterministic_build, PodBuilder::Configuration.build_for_apple_silicon)
+    when [:tvos, false] then PodBuilder::build_for_iosish_platform_lib(sandbox, build_dir, target, 'appletvos', 'appletvsimulator', configuration, PodBuilder::Configuration.deterministic_build, PodBuilder::Configuration.build_for_apple_silicon)
+    when [:watchos, false] then PodBuilder::build_for_iosish_platform_lib(sandbox, build_dir, target, 'watchos', 'watchsimulator', configuration, PodBuilder::Configuration.deterministic_build, PodBuilder::Configuration.build_for_apple_silicon)
     else raise "\n\nUnknown platform '#{target.platform_name}'".red end
-    end
-    
+    end  
+
     raise Pod::Informative, 'The build directory was not found in the expected location.' unless build_dir.directory?
     
     built_count = installer_context.umbrella_targets.map { |t| t.specs.map(&:name) }.flatten.map { |t| t.split("/").first }.uniq.count
