@@ -345,8 +345,6 @@ module PodBuilder
           rel_path = path.gsub(rootpath, "")[1..]
           unless exclude_files.include?(rel_path)
             file_hashes.push(Digest::MD5.hexdigest(File.read(path)))
-          else
-            puts path
           end
         end
 
