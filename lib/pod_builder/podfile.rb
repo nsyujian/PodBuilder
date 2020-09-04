@@ -46,7 +46,7 @@ module PodBuilder
 
         # Don't store .pcm info in binary, see https://forums.swift.org/t/swift-behavior-of-gmodules-and-dsyms/23211/3
         build_settings['CLANG_ENABLE_MODULE_DEBUGGING'] = 'NO'
-        build_settings['OTHER_SWIFT_FLAGS'] = "-Xfrontend -no-clang-module-breadcrumbs"
+        build_settings['OTHER_SWIFT_FLAGS'] = "$(inherited) -Xfrontend -no-clang-module-breadcrumbs"
 
         # Improve compile speed
         build_settings['COMPILER_INDEX_STORE_ENABLE'] = 'NO'
