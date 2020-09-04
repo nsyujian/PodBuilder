@@ -155,6 +155,7 @@ end
 Pod::HooksManager.register('podbuilder-rome', :post_install) do |installer_context, user_options|
   enable_dsym = user_options.fetch('dsym', true)
   configuration = user_options.fetch('configuration', 'Debug')
+  uses_frameworks = user_options.fetch('uses_frameworks', true)
   if user_options["pre_compile"]
     user_options["pre_compile"].call(installer_context)
   end

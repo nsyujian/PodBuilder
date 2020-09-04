@@ -20,6 +20,7 @@ module PodBuilder
       install_using_frameworks = install_using_frameworks(analyzer)      
 
       podfile.sub!("%%%use_frameworks%%%", install_using_frameworks ? "use_frameworks!" : "") 
+      podfile.sub!("%%%uses_frameworks%%%", install_using_frameworks ? "true" : "false") 
 
       podfile.sub!("%%%platform_name%%%", platform.name.to_s)
       podfile.sub!("%%%deployment_version%%%", platform.deployment_target.version)
