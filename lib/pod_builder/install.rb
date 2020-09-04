@@ -291,7 +291,7 @@ module PodBuilder
         data = {}
         data['entry'] = entry
         data['is_prebuilt'] = podfile_item.is_prebuilt  
-        if Dir.glob(File.join(path, "#{podfile_item.module_name}/Headers/*-Swift.h")).count > 0
+        if Dir.glob(File.join(path, "#{podfile_item.prebuilt_rel_path}/Headers/*-Swift.h")).count > 0
           data['swift_version'] = swift_version
         end
         
