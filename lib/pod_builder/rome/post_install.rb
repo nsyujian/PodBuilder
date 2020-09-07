@@ -2,6 +2,7 @@
 
 require 'fourflusher'
 require 'colored'
+require 'pathname'
 
 module PodBuilder
   def self.build_for_iosish_platform_framework(sandbox, build_dir, target, device, simulator, configuration, deterministic_build, build_for_apple_silicon)
@@ -80,10 +81,10 @@ module PodBuilder
   def self.build_for_iosish_platform_lib(sandbox, build_dir, target, device, simulator, configuration, deterministic_build, build_for_apple_silicon)
     raise "\n\nApple silicon hardware still unsupported since it requires to migrate to xcframeworks".red if build_for_apple_silicon
 
-    device_headers_folder = File.join(build_dir, "Headers", device)
-    simulator_headers_folder = File.join(build_dir, "Headers", simulator)
-    FileUtils.mkdir_p(device_headers_folder)
-    FileUtils.mkdir_p(simulator_headers_folder)
+    device_headers_path = File.join(build_dir, "Headers", device)
+    simulator_headers_path = File.join(build_dir, "Headers", simulator)
+    FileUtils.mkdir_p(device_headers_path)
+    FileUtils.mkdir_p(simulator_headers_path)
         
     deployment_target = target.platform_deployment_target
     target_label = target.cocoapods_target_label
@@ -92,43 +93,39 @@ module PodBuilder
 
     xcodebuild(sandbox, target_label, device, deployment_target, configuration, deterministic_build, [])
     spec_names.each do |root_name, module_name|
-      headers_private = "#{sandbox.headers_root.to_s}/Private/#{root_name}/#{module_name}"
-      headers_public = "#{sandbox.headers_root.to_s}/Public/#{root_name}/#{module_name}"
-  
-      device_base = "#{build_dir}/#{configuration}-#{device}/#{root_name}" 
-      device_lib = "#{device_base}/lib#{module_name}.a"
+      headers_path = "#{sandbox.headers_root.to_s}/Public/#{root_name}"
+      dest_path = "#{device_headers_path}/#{root_name}"
+      FileUtils.mkdir_p(dest_path)
 
-      FileUtils.cp headers_private, device_headers_folder
-      FileUtils.cp headers_public, device_headers_folder
+      Dir.glob("#{headers_path}/*") do |path|
+        real_path = Pathname.new(path).realpath
+        FileUtils.cp_r(real_path, dest_path)
+      end
     end
 
     excluded_archs = build_for_apple_silicon ? [] : ["arm64"]
     xcodebuild(sandbox, target_label, simulator, deployment_target, configuration, deterministic_build, excluded_archs)
     spec_names.each do |root_name, module_name|
-      headers_private = "#{sandbox.headers_root.to_s}/Private/#{root_name}/#{module_name}"
-      headers_public = "#{sandbox.headers_root.to_s}/Public/#{root_name}/#{module_name}"
-  
-      simulator_base = "#{build_dir}/#{configuration}-#{simulator}/#{root_name}"
-      simulator_lib = "#{simulator_base}/lib#{module_name}.a"
-
-      FileUtils.cp headers_private, simulator_headers_folder
-      FileUtils.cp headers_public, simulator_headers_folder
+      headers_path = "#{sandbox.headers_root.to_s}/Public/#{root_name}"
+      dest_path = "#{simulator_headers_path}/#{root_name}"
+      FileUtils.mkdir_p(dest_path)
+      
+      Dir.glob("#{headers_path}/*") do |path|
+        real_path = Pathname.new(path).realpath
+        FileUtils.cp_r(real_path, dest_path)
+      end
     end
 
     spec_names.each do |root_name, module_name|
-      device_headers_private = ""
-      device_headers_public = ""
-      simulator_headers_private = ""
-      simulator_headers_public = ""
+      simulator_base = "#{build_dir}/#{configuration}-#{simulator}/#{root_name}"
+      simulator_lib = "#{simulator_base}/lib#{module_name}.a"
 
       device_base = "#{build_dir}/#{configuration}-#{device}/#{root_name}" 
       device_lib = "#{device_base}/lib#{module_name}.a"
-      simulator_base = "#{build_dir}/#{configuration}-#{simulator}/#{root_name}"
-      simulator_lib = "#{simulator_base}/lib#{module_name}.a"
   
       next unless File.file?(device_lib) && File.file?(simulator_lib)
 
-            # Starting with Xcode 12b3 the simulator binary contains an arm64 slice as well which conflict with the one in the device_lib
+      # Starting with Xcode 12b3 the simulator binary contains an arm64 slice as well which conflict with the one in the device_lib
       # when creating the fat library. A naive workaround is to remove the arm64 from the simulator_lib however this is wrong because 
       # we might actually need to have 2 separated arm64 slices, one for simulator and one for device each built with different
       # compile time directives (e.g #if targetEnvironment(simulator))
@@ -139,22 +136,34 @@ module PodBuilder
       end
       
       raise "Lipo failed on #{device_lib}" unless system("xcrun lipo -create -output #{device_lib} #{device_lib} #{simulator_lib}")
-      
-      # Merge swift headers as per Xcode 10.2 release notes
-      if File.exist?(device_swift_header_path) && File.exist?(simulator_swift_header_path)
-        device_content = File.read(device_swift_header_path)
-        simulator_content = File.read(simulator_swift_header_path)
-        merged_content = %{
+
+      device_headers = Dir.glob("#{device_headers_path}/**/*.h")
+      simulator_headers = Dir.glob("#{simulator_headers_path}/**/*.h")
+      device_headers.each do |device_path|
+        simulator_path = device_path.gsub(device_headers_path, simulator_headers_path)
+        if File.exist?(simulator_path)
+          device_content = File.read(device_path)
+          simulator_content = File.read(simulator_path)
+          merged_content = %{
+            #if TARGET_OS_SIMULATOR
+            #{simulator_content}
+            #else
+            #{device_content}
+            #endif
+          }        
+          File.write(device_path, merged_content)
+        end
+      end
+      simulator_only_headers = simulator_headers - device_headers.map { |t| t.gsub(device_headers_path, simulator_headers_path) }
+      simulator_only_headers.each do |path|
+        simulator_content = File.read(path)
+        content = %{
           #if TARGET_OS_SIMULATOR
           #{simulator_content}
-          #else
-          #{device_content}
           #endif
         }        
-        File.write(device_swift_header_path, merged_content)
+        File.write(path, content)
       end
-
-
     end
 
 
@@ -306,8 +315,6 @@ module PodBuilder
     end
     project.save
   end
-
-  
 end
 
 Pod::HooksManager.register('podbuilder-rome', :post_install) do |installer_context, user_options|
