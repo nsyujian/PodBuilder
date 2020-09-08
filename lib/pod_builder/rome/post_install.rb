@@ -396,7 +396,10 @@ Pod::HooksManager.register('podbuilder-rome', :post_install) do |installer_conte
     end
     
     if enable_dsym
-      FileUtils.mv("#{build_dir}/dSYM", sandbox_root.parent)
+      dsym_source = "#{build_dir}/dSYM"
+      if File.directory?(dsym_source)
+        FileUtils.mv(dsym_source, sandbox_root.parent)
+      end
     else
       raise "Not implemented"
     end
