@@ -65,6 +65,7 @@ module PodBuilder
       attr_accessor :build_for_apple_silicon
       attr_accessor :build_using_repo_paths
       attr_accessor :react_native_project
+      attr_accessor :lldbinit_name
     end
     
     @allow_building_development_pods = false
@@ -92,6 +93,7 @@ module PodBuilder
     @prebuilt_info_filename = "PodBuilder.json"
     @lockfile_name = "PodBuilder.lock"
     @lockfile_path = "/tmp/#{lockfile_name}"
+    @lldbinit_name = "lldbinit".freeze
 
     @use_bundler = false
     @deterministic_build = false

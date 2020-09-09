@@ -264,14 +264,16 @@ Usage:
         opts.banner = "
 Usage:
         
-    $ pod_builder update_lldbinit <LLDBINIT_PATH> <PATH>
+    $ pod_builder update_lldbinit [PATH]
 
-      Update LLDBINIT_PATH setting target.source-map in order to be able to step into 
-      and debug prebuilt prebuilt's code.
+      Update PodBuilder's custom lldbinit by setting the target.source-map which allows to
+      step into and debug prebuilt prebuilt's code. To allow this to work it is required
+      to specify a path containing the source code that generated the prebuilt item.
 
-      Specify the PATH of the folder containing the source code of prebuilt items. PATH can be relative to PodBuilder's Prebuilt folder.
-
-"         
+      You can pass a [PATH] which PodBuilder will use to look for dependencies's source code. 
+      If omitted it will be implied that the project is organized as a monorepo expecting
+      source code dependencies to live in the project repo.
+"
       end,
       :call => [        
         PodBuilder::Command::UpdateLldbInit
