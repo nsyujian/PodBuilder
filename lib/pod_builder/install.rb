@@ -178,7 +178,7 @@ module PodBuilder
       # Development pods are normally built/integrated without moving files from their original paths.
       # It is important that CocoaPods compiles the files under Configuration.build_path in order that 
       # DWARF debug info reference to this constant path. Doing otherwise breaks the assumptions that 
-      # makes  the `update_lldbinit` command work.
+      # makes  the `generate_lldbinit` command work.
       development_pods = podfile_items.select { |x| x.is_development_pod }      
       development_pods.each do |podfile_item|
         destination_path = "#{Configuration.build_path}/Pods/#{podfile_item.name}"

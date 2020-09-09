@@ -39,7 +39,7 @@ Command:
     + update                         Rebuild items that are outdated
     + restore_all                    Rebuild all pods declared in the Restore-Podfile
     + install_sources                Install sources of pods to debug into prebuilt items
-    + update_lldbinit                Generate an lldbinit file with setting target.source-map to debug prebuilt items
+    + generate_lldbinit              Generate an lldbinit file with setting target.source-map to debug prebuilt items
     + switch                         Switch between prebuilt/development/standard pod in the Application-Podfile
     + clean                          Remove prebuild items, dSYMs and source files added by `install_sources` command that are no longer in the PodBuilder-Podfile
     + sync_podfile                   Update your Application-Podfile with all pods declared in the PodBuilder-Podfile
@@ -258,12 +258,12 @@ Usage:
       ]
     },
 
-    "update_lldbinit" => {         
+    "generate_lldbinit" => {         
       :opts => OptionParser.new do |opts|
         opts.banner = "
 Usage:
         
-    $ pod_builder update_lldbinit [PATH]
+    $ pod_builder generate_lldbinit [PATH]
 
       Update PodBuilder's custom lldbinit by setting the target.source-map which allows to
       step into and debug prebuilt prebuilt's code. To allow this to work it is required
@@ -276,21 +276,6 @@ Usage:
       end,
       :call => [        
         PodBuilder::Command::UpdateLldbInit
-      ]
-    },
-
-    "clear_lldbinit" => {         
-      :opts => OptionParser.new do |opts|
-        opts.banner = "
-Usage:
-        
-    $ pod_builder clear_lldbinit <LLDBINIT_PATH>
-
-      Clear LLDBINIT_PATH setting target.source-map PodBuilder's customizations
-"         
-      end,
-      :call => [        
-        PodBuilder::Command::ClearLldbInit
       ]
     },
 
