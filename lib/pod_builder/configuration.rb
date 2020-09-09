@@ -23,7 +23,6 @@ module PodBuilder
     DEFAULT_FORCE_PREBUILD_PODS = ["Firebase", "GoogleTagManager"]
     DEFAULT_BUILD_SYSTEM = "Legacy".freeze # either Latest (New build system) or Legacy (Standard build system)
     DEFAULT_LIBRARY_EVOLUTION_SUPPORT = false
-    MIN_LFS_SIZE_KB = 256.freeze
     DEFAULT_PLATFORMS = ["iphoneos", "iphonesimulator", "appletvos", "appletvsimulator"].freeze
     DEFAULT_BUILD_FOR_APPLE_SILICON = false
     DEFAULT_BUILD_USING_REPO_PATHS = false
@@ -31,7 +30,6 @@ module PodBuilder
     private_constant :DEFAULT_BUILD_SETTINGS
     private_constant :DEFAULT_BUILD_SYSTEM
     private_constant :DEFAULT_LIBRARY_EVOLUTION_SUPPORT
-    private_constant :MIN_LFS_SIZE_KB
     
     class <<self      
       attr_accessor :allow_building_development_pods
@@ -51,9 +49,6 @@ module PodBuilder
       attr_accessor :build_path
       attr_accessor :configuration_filename
       attr_accessor :dev_pods_configuration_filename
-      attr_accessor :lfs_min_file_size
-      attr_accessor :lfs_update_gitattributes
-      attr_accessor :lfs_include_pods_folder
       attr_accessor :project_name
       attr_accessor :restore_enabled
       attr_accessor :prebuilt_info_filename
@@ -85,9 +80,6 @@ module PodBuilder
     @build_path = build_base_path
     @configuration_filename = "PodBuilder.json".freeze
     @dev_pods_configuration_filename = "PodBuilderDevPodsPaths.json".freeze
-    @lfs_min_file_size = MIN_LFS_SIZE_KB
-    @lfs_update_gitattributes = false
-    @lfs_include_pods_folder = false
     @project_name = ""
     @restore_enabled = true
     @prebuilt_info_filename = "PodBuilder.json"
@@ -175,16 +167,6 @@ module PodBuilder
             Configuration.subspecs_to_split = value
           end
         end
-        if value = json["lfs_update_gitattributes"]
-          if [TrueClass, FalseClass].include?(value.class)
-            Configuration.lfs_update_gitattributes = value
-          end
-        end
-        if value = json["lfs_include_pods_folder"]
-          if [TrueClass, FalseClass].include?(value.class)
-            Configuration.lfs_include_pods_folder = value
-          end
-        end
         if value = json["project_name"]
           if value.is_a?(String) && value.length > 0
             Configuration.project_name = value
@@ -264,8 +246,6 @@ module PodBuilder
       config["library_evolution_support"] = Configuration.library_evolution_support
       config["license_filename"] = Configuration.license_filename
       config["subspecs_to_split"] = Configuration.subspecs_to_split
-      config["lfs_update_gitattributes"] = Configuration.lfs_update_gitattributes
-      config["lfs_include_pods_folder"] = Configuration.lfs_include_pods_folder
       config["restore_enabled"] = Configuration.restore_enabled
       config["allow_building_development_pods"] = Configuration.allow_building_development_pods
       config["use_bundler"] = Configuration.use_bundler

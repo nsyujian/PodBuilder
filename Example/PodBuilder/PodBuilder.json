@@ -32,7 +32,5 @@
   "license_filename": "Pods-acknowledgements",
   "subspecs_to_split": [
 
-  ],
-  "lfs_update_gitattributes": false,
-  "lfs_include_pods_folder": false
+  ]
 }
