@@ -40,7 +40,6 @@ Command:
     + restore_all                    Rebuild all pods declared in the Restore-Podfile
     + install_sources                Install sources of pods to debug into prebuilt items
     + update_lldbinit                Generate an lldbinit file with setting target.source-map to debug prebuilt items
-    + clear_lldbinit                 Clear an lldbinit file from PodBuilder's customizations
     + switch                         Switch between prebuilt/development/standard pod in the Application-Podfile
     + clean                          Remove prebuild items, dSYMs and source files added by `install_sources` command that are no longer in the PodBuilder-Podfile
     + sync_podfile                   Update your Application-Podfile with all pods declared in the PodBuilder-Podfile
