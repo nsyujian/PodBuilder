@@ -124,6 +124,15 @@ In some situations you may already have source code for your prebuilt frameworks
 
 This command will generate a custom lldinit file which will be stored in the _PodBuilder_ folder. Note that this file is added to the .gitignore since it contains absolute path information. Since Xcode 11.5 customly defined lldbinit can be selected in the Run tab in your scheme project ("LLDB Init File"). You should select the generated llbb file path or, if you're using project generation tools such as XcodeGen, you can set it to `${SRCROOT}/../PodBuilder/lldbinit`.
 
+The most convenient place to update the lldbinit file is in your Podfile pre_install or post_install actions. It is suggested to add the following lines
+
+````
+    pid = spawn("pod_builder generate_lldbinit")
+    Process.detach(pid)
+```
+
+To generate lldbinit file. We're generating it asynchronously to avoid unnecessarily slow down `pod install` since this file will be needed only when build and running your application.
+
 #### `switch` command
 
 Once you prebuild a framework you can change the way it is integrated in your project.
