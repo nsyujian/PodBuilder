@@ -180,7 +180,11 @@ module PodBuilder
 
       @default_subspecs = extract_array(spec, "default_subspecs")
       if default_subspec = spec.attributes_hash["default_subspec"]
-        @default_subspecs.push(default_subspec)
+        @default_subspecs.push(default_subspec)        
+      end
+
+      if @name == @root_name && @default_subspecs.empty?
+        @default_subspecs += all_specs.select { |t| t.name.include?("/") && t.name.split("/").first == @root_name }.map { |t| t.name.split("/").last }
       end
 
       @dependency_names = spec.attributes_hash.fetch("dependencies", {}).keys + default_subspecs.map { |t| "#{@root_name}/#{t}" } 
@@ -194,7 +198,12 @@ module PodBuilder
       @is_static = spec.root.attributes_hash["static_framework"] || false
       @xcconfig = spec.root.attributes_hash["xcconfig"] || {}
 
-      @source_files = source_files_from(spec)
+      default_subspecs_specs ||= begin
+        subspecs = all_specs.select { |t| t.name.split("/").first == @root_name }
+        subspecs.select { |t| @default_subspecs.include?(t.name.split("/").last) }
+      end
+      root_spec = all_specs.detect { |t| t.name == @root_name } || spec
+      @source_files = source_files_from([spec, root_spec] + default_subspecs_specs)
       
       @build_configuration = spec.root.attributes_hash.dig("pod_target_xcconfig", "prebuild_configuration") || "release"
       @build_configuration.downcase!
@@ -518,28 +527,9 @@ module PodBuilder
       end
     end
 
-    def source_files_from(spec)
-      files = spec.root.attributes_hash.fetch("source_files", [])
-      root_source_files = source_files_from_string(files)
-
-      files = spec.attributes_hash.fetch("source_files", [])
-      source_files = source_files_from_string(files)
-
-      subspec_source_files = []
-      if spec.name == spec.root.name
-        default_podspecs = spec.attributes_hash.fetch("default_subspecs", [])
-        if default_podspecs.is_a? String 
-          default_podspecs = [default_podspecs]
-        end
-        default_podspecs.each do |subspec_name|
-          if subspec = spec.subspecs.detect { |x| x.name == "#{spec.root.name}/#{subspec_name}" }
-            files = subspec.attributes_hash.fetch("source_files", [])
-            subspec_source_files += source_files_from_string(files)
-          end
-        end
-      end
-
-      return source_files + root_source_files + subspec_source_files
+    def source_files_from(specs)
+      files = specs.map { |t| t.attributes_hash.fetch("source_files", []) }.flatten
+      return source_files_from_string(files).uniq
     end
   end
 end
