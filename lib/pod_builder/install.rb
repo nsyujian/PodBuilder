@@ -298,6 +298,8 @@ module PodBuilder
       gitignored_files = PodBuilder::gitignoredfiles
       
       swift_version = PodBuilder::system_swift_version
+
+      write_prebuilt_info_filename_gitattributes
       
       root_names = podfile_items.reject(&:is_prebuilt).map(&:root_name).uniq
       root_names.each do |prebuilt_name|        
@@ -332,6 +334,14 @@ module PodBuilder
         data['build_folder_hash'] = build_folder_hash(podfile_item, gitignored_files)
         
         File.write(podbuilder_file, JSON.pretty_generate(data))
+      end
+    end
+
+    def self.write_prebuilt_info_filename_gitattributes
+      gitattributes_path = PodBuilder::basepath(".gitattributes")
+      expected_attributes = ["#{Configuration.configuration_filename} binary"].join
+      unless File.exists?(gitattributes_path) && File.read(gitattributes_path).include?(expected_attributes)
+        File.write(gitattributes_path, expected_attributes, mode: 'a')
       end
     end
     
