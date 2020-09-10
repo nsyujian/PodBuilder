@@ -22,17 +22,8 @@ module PodBuilder
         FileUtils.mkdir_p("#{OPTIONS[:prebuild_path]}/.pod_builder")
         FileUtils.touch("#{OPTIONS[:prebuild_path]}/.pod_builder/pod_builder")
 
-        source_path_rel_path = "Sources"
-        development_pods_config_rel_path = Configuration.dev_pods_configuration_filename
-
-        git_ignores = ["Pods/",
-                       "*.xcworkspace",
-                       "*.xcodeproj",
-                       "Podfile.lock",
-                       source_path_rel_path,
-                       development_pods_config_rel_path]
-        
-        File.write("#{OPTIONS[:prebuild_path]}/.gitignore", git_ignores.join("\n"))
+        write_gitignore
+        write_gitattributes
 
         project_podfile_path = PodBuilder::project_path("Podfile")
         prebuilt_podfile_path = File.join(OPTIONS[:prebuild_path], "Podfile")
@@ -60,6 +51,27 @@ module PodBuilder
       end
 
       private 
+
+      def self.write_gitignore
+        source_path_rel_path = "Sources"
+        development_pods_config_rel_path = Configuration.dev_pods_configuration_filename
+
+        git_ignores = ["Pods/",
+                       "*.xcworkspace",
+                       "*.xcodeproj",
+                       "Podfile.lock",
+                       Configuration.lldbinit_name,
+                       source_path_rel_path,
+                       development_pods_config_rel_path]
+        
+        File.write("#{OPTIONS[:prebuild_path]}/.gitignore", git_ignores.join("\n"))
+      end
+
+      def self.write_gitattributes
+        git_attributes = ["#{Configuration.prebuilt_info_filename} binary"]
+        
+        File.write("#{OPTIONS[:prebuild_path]}/.gitattributes", git_attributes.join("\n"))
+      end
 
       def self.podfile_path_transform(path)
         use_absolute_paths = false
