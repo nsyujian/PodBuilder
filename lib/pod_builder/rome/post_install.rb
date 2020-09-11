@@ -58,7 +58,7 @@ module PodBuilder
       FileUtils.mv(device_dsym, dsym_device_folder) if File.exist?(device_dsym)
       FileUtils.mv(simulator_dsym, dsym_simulator_folder) if File.exist?(simulator_dsym)
       
-      FileUtils.cp_r(source_lib, build_dir)
+      FileUtils.mv(source_lib, build_dir)
       
       # Remove frameworks leaving dSYMs
       FileUtils.rm_rf(device_framework_lib) 
@@ -282,6 +282,12 @@ Pod::HooksManager.register('podbuilder-rome', :post_install) do |installer_conte
         # Make sure the device target overwrites anything in the simulator build, otherwise iTunesConnect
         # can get upset about Info.plist containing references to the simulator SDK
         files = Pathname.glob("build/#{root_name}/*").reject { |f| f.to_s =~ /Pods[^.]+\.framework/ }
+
+        consumer = spec.consumer(umbrella.platform_name)
+        file_accessor = Pod::Sandbox::FileAccessor.new(sandbox.pod_dir(spec.root.name), consumer)
+        files += file_accessor.vendored_libraries
+        files += file_accessor.vendored_frameworks
+        files += file_accessor.resources
 
         FileUtils.mkdir_p(destination)        
         files.each do |file|
