@@ -71,31 +71,6 @@ begin
       return res
     end
   end  
-
-  class Pod::Target::BuildSettings
-    class <<self
-      attr_accessor :patch_static_library_generation
-    end
-    
-    alias_method :swz_add_inherited_to_plural, :add_inherited_to_plural
-
-    def add_inherited_to_plural(hash)
-      # There's probably a better place to monkey patch this      
-      h = swz_add_inherited_to_plural(hash)
-      if Pod::Target::BuildSettings.patch_static_library_generation
-        # Static frameworks should NOT import underlying modules to simplify integration of the produced 
-        # artifacts. Without these build options you can integrate the static library the same way you 
-        # would do with a vanilla static library target in Xcode: you just copy the .a and set the Swift 
-        # import path to point to the module map file (which doesn't seem to be needed).
-        flags = h["OTHER_SWIFT_FLAGS"].dup
-        flags.gsub!("-import-underlying-module", "")
-        flags.gsub!("-Xcc -fmodule-map-file=\"${SRCROOT}/${MODULEMAP_FILE}\"", "")
-        h["OTHER_SWIFT_FLAGS"] = flags
-      end
-
-      return h
-    end
-  end
 rescue LoadError
   # CocoaPods 1.6.2 or earlier
 end
@@ -239,8 +214,6 @@ module PodBuilder
         installer.update = false
         
         install_start_time = Time.now
-
-        monkey_patch_static_library_generation()
 
         installer.install! 
         install_time = Time.now - install_start_time
@@ -413,11 +386,5 @@ module PodBuilder
         return replace_path
       end
     end 
-    
-    def self.monkey_patch_static_library_generation()
-      podfile_path = File.join(Configuration.build_path, "Podfile")
-
-      Pod::Target::BuildSettings.patch_static_library_generation = !File.read(podfile_path).include?("use_frameworks!")
-    end
   end
 end
