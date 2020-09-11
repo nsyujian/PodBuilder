@@ -48,29 +48,17 @@ module PodBuilder
       
       raise "Lipo failed on #{device_lib}" unless system("xcrun lipo -create -output #{device_lib} #{device_lib} #{simulator_lib}")
       
-      # Merge swift headers as per Xcode 10.2 release notes
-      if File.exist?(device_swift_header_path) && File.exist?(simulator_swift_header_path)
-        device_content = File.read(device_swift_header_path)
-        simulator_content = File.read(simulator_swift_header_path)
-        merged_content = %{
-          #if TARGET_OS_SIMULATOR
-          #{simulator_content}
-          #else
-          #{device_content}
-          #endif
-        }        
-        File.write(device_swift_header_path, merged_content)
-      end
+      merge_header_into(device_swift_header_path, simulator_swift_header_path)
       
       # Merge device framework into simulator framework (so that e.g swift Module folder is merged) 
       # letting device framework files overwrite simulator ones
       FileUtils.cp_r(File.join(device_framework_lib, "."), simulator_framework_lib) 
       source_lib = File.dirname(simulator_framework_lib)
       
-      FileUtils.cp_r(source_lib, build_dir)
+      FileUtils.mv(device_dsym, dsym_device_folder) if File.exist?(device_dsym)
+      FileUtils.mv(simulator_dsym, dsym_simulator_folder) if File.exist?(simulator_dsym)
       
-      FileUtils.cp_r(device_dsym, dsym_device_folder) if File.exist?(device_dsym)
-      FileUtils.cp_r(simulator_dsym, dsym_simulator_folder) if File.exist?(simulator_dsym)
+      FileUtils.cp_r(source_lib, build_dir)
       
       # Remove frameworks leaving dSYMs
       FileUtils.rm_rf(device_framework_lib) 
@@ -80,11 +68,6 @@ module PodBuilder
 
   def self.build_for_iosish_platform_lib(sandbox, build_dir, target, device, simulator, configuration, deterministic_build, build_for_apple_silicon)
     raise "\n\nApple silicon hardware still unsupported since it requires to migrate to xcframeworks".red if build_for_apple_silicon
-
-    device_headers_path = File.join(build_dir, "Headers", device)
-    simulator_headers_path = File.join(build_dir, "Headers", simulator)
-    FileUtils.mkdir_p(device_headers_path)
-    FileUtils.mkdir_p(simulator_headers_path)
         
     deployment_target = target.platform_deployment_target
     target_label = target.cocoapods_target_label
@@ -92,29 +75,8 @@ module PodBuilder
     spec_names = target.specs.map { |spec| [spec.root.name, spec.root.module_name] }.uniq
 
     xcodebuild(sandbox, target_label, device, deployment_target, configuration, deterministic_build, [])
-    spec_names.each do |root_name, module_name|
-      headers_path = "#{sandbox.headers_root.to_s}/Public/#{root_name}"
-      dest_path = "#{device_headers_path}/#{root_name}"
-      FileUtils.mkdir_p(dest_path)
-
-      Dir.glob("#{headers_path}/*") do |path|
-        real_path = Pathname.new(path).realpath
-        FileUtils.cp_r(real_path, dest_path)
-      end
-    end
-
     excluded_archs = build_for_apple_silicon ? [] : ["arm64"]
     xcodebuild(sandbox, target_label, simulator, deployment_target, configuration, deterministic_build, excluded_archs)
-    spec_names.each do |root_name, module_name|
-      headers_path = "#{sandbox.headers_root.to_s}/Public/#{root_name}"
-      dest_path = "#{simulator_headers_path}/#{root_name}"
-      FileUtils.mkdir_p(dest_path)
-      
-      Dir.glob("#{headers_path}/*") do |path|
-        real_path = Pathname.new(path).realpath
-        FileUtils.cp_r(real_path, dest_path)
-      end
-    end
 
     spec_names.each do |root_name, module_name|
       simulator_base = "#{build_dir}/#{configuration}-#{simulator}/#{root_name}"
@@ -137,112 +99,68 @@ module PodBuilder
       
       raise "Lipo failed on #{device_lib}" unless system("xcrun lipo -create -output #{device_lib} #{device_lib} #{simulator_lib}")
 
-      device_headers = Dir.glob("#{device_headers_path}/**/*.h")
-      simulator_headers = Dir.glob("#{simulator_headers_path}/**/*.h")
+      device_headers = Dir.glob("#{device_base}/**/*.h")
+      simulator_headers = Dir.glob("#{simulator_base}/**/*.h")
       device_headers.each do |device_path|
-        simulator_path = device_path.gsub(device_headers_path, simulator_headers_path)
-        if File.exist?(simulator_path)
-          device_content = File.read(device_path)
-          simulator_content = File.read(simulator_path)
-          merged_content = %{
-            #if TARGET_OS_SIMULATOR
-            #{simulator_content}
-            #else
-            #{device_content}
-            #endif
-          }        
-          File.write(device_path, merged_content)
-        end
-      end
-      simulator_only_headers = simulator_headers - device_headers.map { |t| t.gsub(device_headers_path, simulator_headers_path) }
+        simulator_path = device_path.gsub(device_base, simulator_base)
+
+        merge_header_into(device_path, simulator_path)
+      end 
+      simulator_only_headers = simulator_headers - device_headers.map { |t| t.gsub(device_base, simulator_base) }
       simulator_only_headers.each do |path|
-        simulator_content = File.read(path)
-        content = %{
-          #if TARGET_OS_SIMULATOR
-          #{simulator_content}
-          #endif
-        }        
-        File.write(path, content)
+        add_simulator_conditional(path)
+        dir_name = File.dirname(path)
+        destination_folder = dir_name.gsub(simulator_base, device_base)
+        FileUtils.mkdir_p(destination_folder)
+        FileUtils.cp(path, destination_folder)
       end
-    end
 
-
-
-    spec_names = target.specs.map { |spec| [spec.root.name, spec.root.module_name] }.uniq
-    spec_names.each do |root_name, module_name|
-      device_base = "#{build_dir}/#{configuration}-#{device}/#{root_name}" 
-      device_lib = "#{device_base}/#{module_name}.framework/#{module_name}"
-      device_dsym = "#{device_base}/#{module_name}.framework.dSYM"
-      device_framework_lib = File.dirname(device_lib)
-      device_swift_header_path = "#{device_framework_lib}/Headers/#{module_name}-Swift.h"
-      
-      simulator_base = "#{build_dir}/#{configuration}-#{simulator}/#{root_name}"
-      simulator_lib = "#{simulator_base}/#{module_name}.framework/#{module_name}"
-      simulator_dsym = "#{simulator_base}/#{module_name}.framework.dSYM"
-      simulator_framework_lib = File.dirname(simulator_lib)
-      simulator_swift_header_path = "#{simulator_framework_lib}/Headers/#{module_name}-Swift.h"
-      
-      next unless File.file?(device_lib) && File.file?(simulator_lib)
-      
-      # Starting with Xcode 12b3 the simulator binary contains an arm64 slice as well which conflict with the one in the device_lib
-      # when creating the fat library. A naive workaround is to remove the arm64 from the simulator_lib however this is wrong because 
-      # we might actually need to have 2 separated arm64 slices, one for simulator and one for device each built with different
-      # compile time directives (e.g #if targetEnvironment(simulator))
-      #
-      # For the time being we remove the arm64 slice bacause otherwise the `xcrun lipo -create -output ...` would fail.
-      if `xcrun lipo -info #{simulator_lib}`.include?("arm64")
-        `xcrun lipo -remove arm64 #{simulator_lib} -o #{simulator_lib}`
+      destination_path = "#{build_dir}/#{root_name}"
+      FileUtils.mv(device_base, destination_path)
+      module_maps = Dir.glob("#{destination_path}/**/*.modulemap")
+      module_map_device_base = device_base.gsub(/^\/private/, "") + "/"
+      module_maps.each do |module_map|
+        content = File.read(module_map)
+        content.gsub!(module_map_device_base, "")
+        File.write(module_map, content)
       end
-      
-      raise "Lipo failed on #{device_lib}" unless system("xcrun lipo -create -output #{device_lib} #{device_lib} #{simulator_lib}")
-      
-      # Merge swift headers as per Xcode 10.2 release notes
-      if File.exist?(device_swift_header_path) && File.exist?(simulator_swift_header_path)
-        device_content = File.read(device_swift_header_path)
-        simulator_content = File.read(simulator_swift_header_path)
-        merged_content = %{
-          #if TARGET_OS_SIMULATOR
-          #{simulator_content}
-          #else
-          #{device_content}
-          #endif
-        }        
-        File.write(device_swift_header_path, merged_content)
-      end
-      
-      # # Merge device framework into simulator framework (so that e.g swift Module folder is merged) 
-      # # letting device framework files overwrite simulator ones
-      # FileUtils.cp_r(File.join(device_framework_lib, "."), simulator_framework_lib) 
-      # source_lib = File.dirname(simulator_framework_lib)
-      
-      # FileUtils.cp_r(source_lib, build_dir)
-      
-      # FileUtils.cp_r(device_dsym, dsym_device_folder) if File.exist?(device_dsym)
-      # FileUtils.cp_r(simulator_dsym, dsym_simulator_folder) if File.exist?(simulator_dsym)
-      
-      # # Remove frameworks leaving dSYMs
-      # FileUtils.rm_rf(device_framework_lib) 
-      # FileUtils.rm_rf(simulator_framework_lib)
     end
   end
 
+  def self.merge_header_into(device_file, simulator_file)
+    unless File.exist?(device_file) || File.exist?(simulator_file)
+      return
+    end
+    
+    device_content = File.file?(device_file) ? File.read(device_file) : ""
+    simulator_content = File.file?(simulator_file) ? File.read(simulator_file) : ""
+    merged_content = %{
+#if TARGET_OS_SIMULATOR
+// ->
 
+#{simulator_content}
 
+// ->
+#else
+// ->
 
+#{device_content}
 
+// ->
+#endif
+    }        
+    File.write(device_file, merged_content)
+  end 
 
-
-
-
-
-
-
-
-
-
-
-
-
+  def self.add_simulator_conditional(path)
+    file_content = File.read(path)
+    content = %{
+#if TARGET_OS_SIMULATOR
+#{file_content}
+#endif
+    }        
+    File.write(path, content)
+  end
 
   def self.xcodebuild(sandbox, target, sdk='macosx', deployment_target=nil, configuration, deterministic_build, exclude_archs)
     args = %W(-project #{sandbox.project_path.realdirpath} -scheme #{target} -configuration #{configuration} -sdk #{sdk})
@@ -350,7 +268,8 @@ Pod::HooksManager.register('podbuilder-rome', :post_install) do |installer_conte
 
     raise Pod::Informative, 'The build directory was not found in the expected location.' unless build_dir.directory?
     
-    built_count = installer_context.umbrella_targets.map { |t| t.specs.map(&:name) }.flatten.map { |t| t.split("/").first }.uniq.count
+    specs = installer_context.umbrella_targets.map { |t| t.specs.map(&:name) }.flatten.map { |t| t.split("/").first }.uniq
+    built_count = Dir["#{build_dir}/*"].select { |t| specs.include?(File.basename(t)) }.count
     Pod::UI.puts "Built #{built_count} #{'items'.pluralize(built_count)}, copying..."
     
     base_destination.rmtree if base_destination.directory?
@@ -358,20 +277,13 @@ Pod::HooksManager.register('podbuilder-rome', :post_install) do |installer_conte
     installer_context.umbrella_targets.each do |umbrella|
       umbrella.specs.each do |spec|
         root_name = spec.name.split("/").first
+
+        destination = File.join(base_destination, root_name)        
         # Make sure the device target overwrites anything in the simulator build, otherwise iTunesConnect
         # can get upset about Info.plist containing references to the simulator SDK
-        frameworks = Pathname.glob("build/#{root_name}/*.framework").reject { |f| f.to_s =~ /Pods[^.]+\.framework/ }
-        
-        consumer = spec.consumer(umbrella.platform_name)
-        file_accessor = Pod::Sandbox::FileAccessor.new(sandbox.pod_dir(spec.root.name), consumer)
-        frameworks += file_accessor.vendored_libraries
-        frameworks += file_accessor.vendored_frameworks
-        resources = file_accessor.resources
-        
-        destination = File.join(base_destination, root_name)
-        FileUtils.mkdir_p(destination)
-        
-        files = frameworks + resources
+        files = Pathname.glob("build/#{root_name}/*").reject { |f| f.to_s =~ /Pods[^.]+\.framework/ }
+
+        FileUtils.mkdir_p(destination)        
         files.each do |file|
           FileUtils.cp_r(file, destination)
         end    
