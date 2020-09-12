@@ -10,7 +10,9 @@ module PodBuilder
         installer, analyzer = Analyze.installer_at(PodBuilder::basepath, false)
         all_buildable_items = Analyze.podfile_items(installer, analyzer)
 
-        Podspec::generate(all_buildable_items, analyzer)
+        install_using_frameworks = Podfile::install_using_frameworks(analyzer)
+
+        Podspec::generate(all_buildable_items, analyzer, install_using_frameworks)
 
         puts "\n\n🎉 done!\n".green
         return 0

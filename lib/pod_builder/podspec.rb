@@ -3,7 +3,7 @@
 
 module PodBuilder
   class Podspec
-    def self.generate(all_buildable_items, analyzer)  
+    def self.generate(all_buildable_items, analyzer, install_using_frameworks)  
       unless all_buildable_items.count > 0
         return
       end
@@ -11,12 +11,12 @@ module PodBuilder
       puts "Generating PodBuilder's local podspec".yellow
                   
       platform = analyzer.instance_variable_get("@result").targets.first.platform
-      generate_podspec_from(all_buildable_items, platform)
+      generate_podspec_from(all_buildable_items, platform, install_using_frameworks)
     end
     
     private
 
-    def self.generate_spec_keys_for(item, name, all_buildable_items)
+    def self.generate_spec_keys_for(item, name, all_buildable_items, install_using_frameworks)
       podspec = ""
       valid = false
 
@@ -117,7 +117,7 @@ module PodBuilder
           podspec += "\n"
         end
           
-        subspec_keys, subspec_valid = generate_spec_keys_for(subspec_item, subspec, all_buildable_items) 
+        subspec_keys, subspec_valid = generate_spec_keys_for(subspec_item, subspec, all_buildable_items, install_using_frameworks) 
         valid = valid || subspec_valid
 
         if subspec_keys.length > 0
@@ -130,7 +130,7 @@ module PodBuilder
       return podspec, valid
     end
 
-    def self.generate_podspec_from(all_buildable_items, platform)
+    def self.generate_podspec_from(all_buildable_items, platform, install_using_frameworks)
       prebuilt_podspec_path = all_buildable_items.map(&:prebuilt_podspec_path)
       prebuilt_podspec_path.each do |path|
         if File.exist?(path)
@@ -165,7 +165,7 @@ module PodBuilder
         podspec += "    p1.#{platform.safe_string_name.downcase}.deployment_target  = '#{platform.deployment_target.version}'\n"
         podspec += "\n"
 
-        main_keys, valid = generate_spec_keys_for(item, item.root_name, all_buildable_items)
+        main_keys, valid = generate_spec_keys_for(item, item.root_name, all_buildable_items, install_using_frameworks)
         if !valid
           next
         end

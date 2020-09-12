@@ -7,7 +7,7 @@ module PodBuilder
     PRE_INSTALL_ACTIONS = ["Pod::Installer::Xcode::TargetValidator.send(:define_method, :verify_no_duplicate_framework_and_library_names) {}"].freeze
     private_constant :PRE_INSTALL_ACTIONS
 
-    def self.from_podfile_items(items, analyzer, build_configuration)
+    def self.from_podfile_items(items, analyzer, build_configuration, install_using_frameworks)
       raise "\n\nno items".red unless items.count > 0
 
       sources = analyzer.sources
@@ -16,8 +16,6 @@ module PodBuilder
       podfile = File.read("#{cwd}/templates/build_podfile.template")
 
       platform = analyzer.instance_variable_get("@result").targets.first.platform
-
-      install_using_frameworks = install_using_frameworks(analyzer)      
 
       podfile.sub!("%%%use_frameworks%%%", install_using_frameworks ? "use_frameworks!" : "use_modular_headers!") 
       podfile.sub!("%%%uses_frameworks%%%", install_using_frameworks ? "true" : "false") 
@@ -386,6 +384,22 @@ module PodBuilder
       resolved_names.uniq
     end
 
+    def self.install_using_frameworks(analyzer)
+      target_settings = analyzer.podfile.target_definition_list.map(&:uses_frameworks?).uniq
+      if target_settings.count == 1
+        if target_settings.first == false && ENV['DEBUGGING'].nil?
+          raise "\n\nOnly framework packaging currently supported. Please add 'use_frameworks!' at Podfile root level (not nested in targets)".red
+        end
+        return target_settings.first
+      elsif target_settings.count > 1
+        raise "\n\n'use_frameworks!' should be declared only once at Podfile root level (not nested in targets)".red
+      else
+        raise "\n\nFailed detecting use_frameworks!"
+      end
+
+      return true
+    end
+
     private
 
     def self.podfile_path_transform(path)
@@ -677,22 +691,6 @@ module PodBuilder
       Configuration.react_native_project = true
 
       return podfile_content
-    end
-
-    def self.install_using_frameworks(analyzer)
-      target_settings = analyzer.podfile.target_definition_list.map(&:uses_frameworks?).uniq
-      if target_settings.count == 1
-        if target_settings.first == false && ENV['DEBUGGING'].nil?
-          raise "\n\nOnly framework packaging currently supported. Please add 'use_frameworks!' at Podfile root level (not nested in targets)".red
-        end
-        return target_settings.first
-      elsif target_settings.count > 1
-        raise "\n\n'use_frameworks!' should be declared only once at Podfile root level (not nested in targets)".red
-      else
-        raise "\n\nFailed detecting use_frameworks!"
-      end
-
-      return true
     end
   end
 end

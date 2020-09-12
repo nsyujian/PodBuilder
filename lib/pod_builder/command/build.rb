@@ -79,12 +79,14 @@ module PodBuilder
         podfiles_items.push(pods_to_build_release)   
 
         licenses = []
+
+        install_using_frameworks = Podfile::install_using_frameworks(analyzer)
         
         podfiles_items.select { |x| x.count > 0 }.each do |podfile_items|
           build_configuration = podfile_items.map(&:build_configuration).uniq.first
           
           podfile_items = podfile_items.map { |t| t.recursive_dependencies(all_buildable_items) }.flatten.uniq
-          podfile_content = Podfile.from_podfile_items(podfile_items, analyzer, build_configuration)
+          podfile_content = Podfile.from_podfile_items(podfile_items, analyzer, build_configuration, install_using_frameworks)
           
           licenses += Install.podfile(podfile_content, podfile_items, podfile_items.first.build_configuration)
           
@@ -96,7 +98,7 @@ module PodBuilder
 
         Licenses::write(licenses, all_buildable_items)
 
-        Podspec::generate(all_buildable_items, analyzer)
+        Podspec::generate(all_buildable_items, analyzer, install_using_frameworks)
 
         builded_pods = podfiles_items.flatten
         
