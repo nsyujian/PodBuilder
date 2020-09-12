@@ -33,18 +33,31 @@ module PodBuilder
         vendored_frameworks = (existing_vendored_frameworks + existing_vendored_frameworks_basename).uniq
         
         vendored_libraries = item.vendored_libraries
-        existing_vendored_libraries = vendored_libraries.map { |t| "#{item.module_name}/#{t}" }.select(&if_exists)
-        existing_vendored_libraries_basename = vendored_libraries.map { |t| File.basename(t) }.select(&if_exists)
-        vendored_libraries = (existing_vendored_libraries + existing_vendored_libraries_basename).uniq        
-  
-        # .a are static libraries and should not be included again in the podspec to prevent duplicated symbols (in the app and in the prebuilt framework)
-        vendored_libraries.reject! { |t| t.end_with?(".a") }
-  
-        frameworks = all_buildable_items.select { |t| vendored_frameworks.include?("#{t.module_name}.framework") }.uniq
-        static_frameworks = frameworks.select { |x| x.is_static }
-  
-        resources = static_frameworks.map { |x| x.vendored_framework_path.nil? ? nil : "#{x.vendored_framework_path}/*.{nib,bundle,xcasset,strings,png,jpg,tif,tiff,otf,ttf,ttc,plist,json,caf,wav,p12,momd}" }.compact.flatten.uniq
-        exclude_files = static_frameworks.map { |x| x.vendored_framework_path.nil? ? nil : "#{x.vendored_framework_path}/Info.plist" }.compact.flatten.uniq
+        if install_using_frameworks
+          existing_vendored_libraries = vendored_libraries.map { |t| "#{item.module_name}/#{t}" }.select(&if_exists)
+          existing_vendored_libraries_basename = vendored_libraries.map { |t| File.basename(t) }.select(&if_exists)
+          vendored_libraries = (existing_vendored_libraries + existing_vendored_libraries_basename).uniq        
+
+          # .a are static libraries and should not be included again in the podspec to prevent duplicated symbols (in the app and in the prebuilt framework)
+          vendored_libraries.reject! { |t| t.end_with?(".a") }
+
+          frameworks = all_buildable_items.select { |t| vendored_frameworks.include?("#{t.module_name}.framework") }.uniq
+          static_frameworks = frameworks.select { |x| x.is_static }  
+
+          resources = static_frameworks.map { |x| x.vendored_framework_path.nil? ? nil : "#{x.vendored_framework_path}/*.{nib,bundle,xcasset,strings,png,jpg,tif,tiff,otf,ttf,ttc,plist,json,caf,wav,p12,momd}" }.compact.flatten.uniq
+
+          exclude_files = static_frameworks.map { |x| x.vendored_framework_path.nil? ? nil : "#{x.vendored_framework_path}/Info.plist" }.compact.flatten.uniq
+        else
+          vendored_libraries +=  ["#{item.root_name}/lib#{item.module_name}.a"]
+          existing_vendored_libraries = vendored_libraries.map { |t| "#{item.root_name}/#{t}" }.select(&if_exists)
+          resources = ["#{item.root_name}/*.{nib,bundle,xcasset,strings,png,jpg,tif,tiff,otf,ttf,ttc,plist,json,caf,wav,p12,momd}"]
+
+          exclude_files = ["*.modulemap"]
+          unless item.swift_version.nil?
+            exclude_files += ["Swift Compatibility Header/*", "*.swiftmodule"]
+          end
+          exclude_files.map! { |t| "#{item.root_name}/#{t}" }
+        end
           
         if vendored_frameworks.count > 0
           podspec += "#{indentation}#{spec_var}.vendored_frameworks = '#{vendored_frameworks.uniq.sort.join("','")}'\n"
@@ -88,6 +101,14 @@ module PodBuilder
             podspec += "#{indentation}#{spec_var}.xcconfig = #{xcconfig.to_s}\n"
           end
         end
+        unless install_using_frameworks
+          rel_path = Pathname.new(PodBuilder::prebuiltpath).relative_path_from(Pathname.new(PodBuilder::project_path("Pods"))).to_s
+          static_cfg = { "SWIFT_INCLUDE_PATHS" => "$(inherited) $(PODS_ROOT)/#{rel_path}/#{item.root_name}/#{item.root_name}",
+                         "OTHER_CFLAGS" => "$(inherited) -fmodule-map-file=\"$(PODS_ROOT)/#{rel_path}/#{item.root_name}/#{item.root_name}/#{item.root_name}.modulemap\"",
+                         "OTHER_SWIFT_FLAGS" => "$(inherited) -Xcc -fmodule-map-file=\"$(PODS_ROOT)/#{rel_path}/#{item.root_name}/#{item.root_name}/#{item.root_name}.modulemap\""            
+                        }
+          podspec += "#{indentation}#{spec_var}.xcconfig = #{static_cfg.to_s}\n"
+        end
   
         deps = item.dependency_names.sort
         if name == item.root_name
@@ -103,7 +124,7 @@ module PodBuilder
           end
         end
 
-        valid = valid || vendored_frameworks.count > 0
+        valid = valid || (install_using_frameworks ? vendored_frameworks.count > 0 : vendored_libraries.count > 0)
       end
       
       subspec_names = all_buildable_items.map(&:name).select { |t| t.start_with?("#{name}/") }
