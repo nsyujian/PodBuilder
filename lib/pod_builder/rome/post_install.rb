@@ -115,6 +115,8 @@ module PodBuilder
         FileUtils.cp(path, destination_folder)
       end
 
+      FileUtils.cp_r("#{simulator_base}/#{root_name}.swiftmodule/.", "#{device_base}/#{root_name}.swiftmodule")
+
       destination_path = "#{build_dir}/#{root_name}"
       FileUtils.mv(device_base, destination_path)
       module_maps = Dir.glob("#{destination_path}/**/*.modulemap")
