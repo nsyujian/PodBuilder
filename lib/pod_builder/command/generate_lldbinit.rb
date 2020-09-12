@@ -43,7 +43,7 @@ module PodBuilder
         end
 
         source_map_lines = []
-        Dir.glob("#{PodBuilder::prebuiltpath}/**/Podbuilder.json").each do |path|
+        Dir.glob("#{PodBuilder::prebuiltpath}/**/#{Configuration.prebuilt_info_filename}").each do |path|
           data = JSON.parse(File.read(path))
           next if data.fetch("is_prebuilt", true)
 
