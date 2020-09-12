@@ -278,7 +278,11 @@ Pod::HooksManager.register('podbuilder-rome', :post_install) do |installer_conte
       umbrella.specs.each do |spec|
         root_name = spec.name.split("/").first
 
-        destination = File.join(base_destination, root_name)        
+        if uses_frameworks
+          destination = File.join(base_destination, root_name)        
+        else
+          destination = File.join(base_destination, root_name, root_name)        
+        end
         # Make sure the device target overwrites anything in the simulator build, otherwise iTunesConnect
         # can get upset about Info.plist containing references to the simulator SDK
         files = Pathname.glob("build/#{root_name}/*").reject { |f| f.to_s =~ /Pods[^.]+\.framework/ }
