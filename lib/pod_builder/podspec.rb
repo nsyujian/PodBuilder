@@ -101,7 +101,7 @@ module PodBuilder
             podspec += "#{indentation}#{spec_var}.xcconfig = #{xcconfig.to_s}\n"
           end
         end
-        unless install_using_frameworks
+        if !install_using_frameworks && spec_var == 1
           rel_path = Pathname.new(PodBuilder::prebuiltpath).relative_path_from(Pathname.new(PodBuilder::project_path("Pods"))).to_s
           prebuilt_root_var = "#{item.root_name.upcase}_PREBUILT_ROOT"
           static_cfg = { prebuilt_root_var => "$(PODS_ROOT)/#{rel_path}",
