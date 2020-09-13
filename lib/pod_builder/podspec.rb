@@ -103,9 +103,11 @@ module PodBuilder
         end
         unless install_using_frameworks
           rel_path = Pathname.new(PodBuilder::prebuiltpath).relative_path_from(Pathname.new(PodBuilder::project_path("Pods"))).to_s
-          static_cfg = { "SWIFT_INCLUDE_PATHS" => "$(inherited) $(PODS_ROOT)/#{rel_path}/#{item.root_name}/#{item.root_name}",
-                         "OTHER_CFLAGS" => "$(inherited) -fmodule-map-file=\"$(PODS_ROOT)/#{rel_path}/#{item.root_name}/#{item.root_name}/#{item.root_name}.modulemap\"",
-                         "OTHER_SWIFT_FLAGS" => "$(inherited) -Xcc -fmodule-map-file=\"$(PODS_ROOT)/#{rel_path}/#{item.root_name}/#{item.root_name}/#{item.root_name}.modulemap\""            
+          prebuilt_root_var = "#{item.root_name.upcase}_PREBUILT_ROOT"
+          static_cfg = { prebuilt_root_var => "$(PODS_ROOT)/#{rel_path}",
+                         "SWIFT_INCLUDE_PATHS" => "$(inherited) \"$(#{prebuilt_root_var})/#{item.root_name}/#{item.root_name}\"",
+                         "OTHER_CFLAGS" => "$(inherited) -fmodule-map-file=\"$(#{prebuilt_root_var})/#{item.root_name}/#{item.root_name}/#{item.root_name}.modulemap\"",
+                         "OTHER_SWIFT_FLAGS" => "$(inherited) -Xcc -fmodule-map-file=\"$(#{prebuilt_root_var})/#{item.root_name}/#{item.root_name}/#{item.root_name}.modulemap\""            
                         }
           podspec += "#{indentation}#{spec_var}.xcconfig = #{static_cfg.to_s}\n"
         end
