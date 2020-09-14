@@ -48,7 +48,8 @@ module PodBuilder
 
           exclude_files = static_frameworks.map { |x| x.vendored_framework_path.nil? ? nil : "#{x.vendored_framework_path}/Info.plist" }.compact.flatten.uniq
         else
-          vendored_libraries +=  ["#{item.root_name}/lib#{item.module_name}.a"]
+          public_headers = Dir.glob(PodBuilder::prebuiltpath("#{item.root_name}/#{item.root_name}/Headers/**/*.h"))
+          vendored_libraries +=  ["#{item.root_name}/lib#{item.root_name}.a"]
           existing_vendored_libraries = vendored_libraries.map { |t| "#{item.root_name}/#{t}" }.select(&if_exists)
           resources = ["#{item.root_name}/*.{nib,bundle,xcasset,strings,png,jpg,tif,tiff,otf,ttf,ttc,plist,json,caf,wav,p12,momd}"]
 
@@ -77,6 +78,10 @@ module PodBuilder
         if exclude_files.count > 0
           podspec += "#{indentation}#{spec_var}.exclude_files = '#{exclude_files.uniq.sort.join("', '")}'\n"
         end
+        if public_headers.count > 0
+          podspec += "#{indentation}#{spec_var}.public_header_files = '#{item.root_name}/Headers/**/*.h'\n"
+        end
+
         if item.xcconfig.keys.count > 0
           xcconfig = Hash.new
           item.xcconfig.each do |k, v|
@@ -101,15 +106,20 @@ module PodBuilder
             podspec += "#{indentation}#{spec_var}.xcconfig = #{xcconfig.to_s}\n"
           end
         end
-        if !install_using_frameworks && spec_var == 1
-          rel_path = Pathname.new(PodBuilder::prebuiltpath).relative_path_from(Pathname.new(PodBuilder::project_path("Pods"))).to_s
-          prebuilt_root_var = "#{item.root_name.upcase}_PREBUILT_ROOT"
-          static_cfg = { prebuilt_root_var => "$(PODS_ROOT)/#{rel_path}",
-                         "SWIFT_INCLUDE_PATHS" => "$(inherited) \"$(#{prebuilt_root_var})/#{item.root_name}/#{item.root_name}\"",
-                         "OTHER_CFLAGS" => "$(inherited) -fmodule-map-file=\"$(#{prebuilt_root_var})/#{item.root_name}/#{item.root_name}/#{item.root_name}.modulemap\"",
-                         "OTHER_SWIFT_FLAGS" => "$(inherited) -Xcc -fmodule-map-file=\"$(#{prebuilt_root_var})/#{item.root_name}/#{item.root_name}/#{item.root_name}.modulemap\""            
-                        }
-          podspec += "#{indentation}#{spec_var}.xcconfig = #{static_cfg.to_s}\n"
+        if !install_using_frameworks && spec_var == "p1"
+          module_path_files = Dir.glob(PodBuilder.prebuiltpath("#{item.root_name}/**/#{item.root_name}.modulemap"))
+          raise "\n\nToo many module maps found for #{item.root_name}".red if module_path_files.count > 1
+          if module_path_file = module_path_files.first
+            rel_path = Pathname.new(PodBuilder::prebuiltpath).relative_path_from(Pathname.new(PodBuilder::project_path("Pods"))).to_s
+            prebuilt_root_var = "#{item.root_name.upcase}_PREBUILT_ROOT"
+            module_map_rel = module_path_file.gsub(PodBuilder::prebuiltpath("#{item.root_name}/#{item.root_name}/"), "")
+            static_cfg = { prebuilt_root_var => "$(PODS_ROOT)/#{rel_path}",
+                          "SWIFT_INCLUDE_PATHS" => "$(inherited) \"$(#{prebuilt_root_var})/#{item.root_name}/#{item.root_name}\"",
+                          "OTHER_CFLAGS" => "$(inherited) -fmodule-map-file=\"$(#{prebuilt_root_var})/#{item.root_name}/#{item.root_name}/#{module_map_rel}\"",
+                          "OTHER_SWIFT_FLAGS" => "$(inherited) -Xcc -fmodule-map-file=\"$(#{prebuilt_root_var})/#{item.root_name}/#{item.root_name}/#{module_map_rel}\""
+                          }
+            podspec += "#{indentation}#{spec_var}.xcconfig = #{static_cfg.to_s}\n"
+                        end
         end
   
         deps = item.dependency_names.sort

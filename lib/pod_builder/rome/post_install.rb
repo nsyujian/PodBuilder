@@ -120,6 +120,14 @@ module PodBuilder
         FileUtils.cp_r("#{swiftmodule_path}/.", "#{device_base}/#{root_name}.swiftmodule")
       end
 
+      public_headers_path = "#{Configuration.build_path}/Pods/Headers/Public/#{root_name}"
+      Dir.glob("#{public_headers_path}/**/*.*").each do |path|
+        destination_folder = "#{device_base}/Headers" + path.gsub(public_headers_path, "")
+        destination_folder = File.dirname(destination_folder)
+        FileUtils.mkdir_p(destination_folder)
+        FileUtils.cp(path, destination_folder)
+      end
+
       destination_path = "#{build_dir}/#{root_name}"
       FileUtils.mv(device_base, destination_path)
       module_maps = Dir.glob("#{destination_path}/**/*.modulemap")
