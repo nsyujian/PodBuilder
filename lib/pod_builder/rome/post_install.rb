@@ -121,6 +121,8 @@ module PodBuilder
       end
 
       unless File.exist?("#{device_base}/#{root_name}.swiftmodule")
+        # This is a swift pod with a swiftmodule in the root of the prebuilt folder
+        # Objective-C pods have the swiftmodule generated under Pods/Headers/Public
         public_headers_path = "#{Configuration.build_path}/Pods/Headers/Public/#{root_name}"
         Dir.glob("#{public_headers_path}/**/*.*").each do |path|
           destination_folder = "#{device_base}/Headers" + path.gsub(public_headers_path, "")
