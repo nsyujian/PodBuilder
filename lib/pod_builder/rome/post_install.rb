@@ -136,7 +136,7 @@ module PodBuilder
         content = File.read(module_map)
         content.gsub!(module_map_device_base, "")
         File.write(module_map, content)
-      end
+      end      
     end
   end
 

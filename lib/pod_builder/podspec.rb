@@ -47,6 +47,7 @@ module PodBuilder
           resources = static_frameworks.map { |x| x.vendored_framework_path.nil? ? nil : "#{x.vendored_framework_path}/*.{nib,bundle,xcasset,strings,png,jpg,tif,tiff,otf,ttf,ttc,plist,json,caf,wav,p12,momd}" }.compact.flatten.uniq
 
           exclude_files = static_frameworks.map { |x| x.vendored_framework_path.nil? ? nil : "#{x.vendored_framework_path}/Info.plist" }.compact.flatten.uniq
+          public_headers = []
         else
           public_headers = Dir.glob(PodBuilder::prebuiltpath("#{item.root_name}/#{item.root_name}/Headers/**/*.h"))
           vendored_libraries +=  ["#{item.root_name}/lib#{item.root_name}.a"]
