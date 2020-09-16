@@ -51,7 +51,8 @@ module PodBuilder
         else
           public_headers = Dir.glob(PodBuilder::prebuiltpath("#{item.root_name}/#{item.root_name}/Headers/**/*.h"))
           vendored_libraries +=  ["#{item.root_name}/lib#{item.root_name}.a"]
-          existing_vendored_libraries = vendored_libraries.map { |t| "#{item.root_name}/#{t}" }.select(&if_exists)
+          vendored_libraries.map! { |t| "#{item.root_name}/#{t}" }.select(&if_exists)
+           
           resources = ["#{item.root_name}/*.{nib,bundle,xcasset,strings,png,jpg,tif,tiff,otf,ttf,ttc,plist,json,caf,wav,p12,momd}"]
 
           exclude_files = ["*.modulemap"]
