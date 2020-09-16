@@ -85,19 +85,19 @@ module PodBuilder
       device_base = "#{build_dir}/#{configuration}-#{device}/#{root_name}" 
       device_lib = "#{device_base}/lib#{module_name}.a"
   
-      next unless File.file?(device_lib) && File.file?(simulator_lib)
-
-      # Starting with Xcode 12b3 the simulator binary contains an arm64 slice as well which conflict with the one in the device_lib
-      # when creating the fat library. A naive workaround is to remove the arm64 from the simulator_lib however this is wrong because 
-      # we might actually need to have 2 separated arm64 slices, one for simulator and one for device each built with different
-      # compile time directives (e.g #if targetEnvironment(simulator))
-      #
-      # For the time being we remove the arm64 slice bacause otherwise the `xcrun lipo -create -output ...` would fail.
-      if `xcrun lipo -info #{simulator_lib}`.include?("arm64")
-        `xcrun lipo -remove arm64 #{simulator_lib} -o #{simulator_lib}`
+      if File.file?(device_lib) && File.file?(simulator_lib)
+        # Starting with Xcode 12b3 the simulator binary contains an arm64 slice as well which conflict with the one in the device_lib
+        # when creating the fat library. A naive workaround is to remove the arm64 from the simulator_lib however this is wrong because 
+        # we might actually need to have 2 separated arm64 slices, one for simulator and one for device each built with different
+        # compile time directives (e.g #if targetEnvironment(simulator))
+        #
+        # For the time being we remove the arm64 slice bacause otherwise the `xcrun lipo -create -output ...` would fail.
+        if `xcrun lipo -info #{simulator_lib}`.include?("arm64")
+          `xcrun lipo -remove arm64 #{simulator_lib} -o #{simulator_lib}`
+        end
+        
+        raise "Lipo failed on #{device_lib}" unless system("xcrun lipo -create -output #{device_lib} #{device_lib} #{simulator_lib}")
       end
-      
-      raise "Lipo failed on #{device_lib}" unless system("xcrun lipo -create -output #{device_lib} #{device_lib} #{simulator_lib}")
 
       device_headers = Dir.glob("#{device_base}/**/*.h")
       simulator_headers = Dir.glob("#{simulator_base}/**/*.h")
