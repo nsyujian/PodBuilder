@@ -133,15 +133,18 @@ module PodBuilder
       end
 
       destination_path = "#{build_dir}/#{root_name}"
-      FileUtils.mv(device_base, destination_path)
+      if File.directory?(destination_path)
+        # There are some rare cases where pod produce nothing (e.g. React-RCTActionSheet in RN projects which contains 2 js files)
+        FileUtils.mv(device_base, destination_path)
 
-      module_maps = Dir.glob("#{destination_path}/**/*.modulemap")
-      module_map_device_base = device_base.gsub(/^\/private/, "") + "/"
-      module_maps.each do |module_map|
-        content = File.read(module_map)
-        content.gsub!(module_map_device_base, "")
-        File.write(module_map, content)
-      end      
+        module_maps = Dir.glob("#{destination_path}/**/*.modulemap")
+        module_map_device_base = device_base.gsub(/^\/private/, "") + "/"
+        module_maps.each do |module_map|
+          content = File.read(module_map)
+          content.gsub!(module_map_device_base, "")
+          File.write(module_map, content)
+        end      
+      end
     end
   end
 
