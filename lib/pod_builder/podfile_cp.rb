@@ -3,7 +3,7 @@ require 'cocoapods/podfile.rb'
 module Pod
   class Podfile
     class TargetDefinition
-      def pb_to_s(all_buildable_items, indent_level = 0)
+      def pb_to_s(all_buildable_items, indent_level = 0, parent_pods = [])
         indentation = "  " * indent_level
         target_s = "#{indentation}target '#{self.name}' do\n"
         
@@ -15,7 +15,8 @@ module Pod
         prebuild_entries = []
         self.dependencies.each do |dep|
           if podfile_item = all_buildable_items.detect { |t| t.name == dep.name } 
-            if File.exist?(podfile_item.prebuilt_podspec_path) && !podfile_item.is_prebuilt 
+            is_prebuilt = all_buildable_items.select { |t| t.root_name == dep.root_name}.all?(&:is_prebuilt)
+            if File.exist?(podfile_item.prebuilt_podspec_path) && !is_prebuilt
               prebuild_entries.push(podfile_item)
             else
               pod_entries.push(podfile_item)
@@ -34,7 +35,8 @@ module Pod
             non_explicit_dependencies.each do |dep|
               dep_item = all_buildable_items.detect { |x| x.name == dep.name }
 
-              if File.exist?(dep_item.prebuilt_podspec_path) && !dep_item.is_prebuilt 
+              is_prebuilt = all_buildable_items.select { |t| t.root_name == dep.root_name}.all?(&:is_prebuilt)
+              if File.exist?(dep_item.prebuilt_podspec_path) && !is_prebuilt
                 prebuild_entries.push(dep_item)
               else
                 pod_entries.push(dep_item)
@@ -47,6 +49,10 @@ module Pod
 
         prebuild_entries = prebuild_entries.uniq.sort_by { |t| t.name }
         pod_entries = pod_entries.uniq.sort_by { |t| t.name }
+        
+        # Don't include inherited pods
+        prebuild_entries.reject! { |t| parent_pods.include?(t) }
+        pod_entries.reject! { |t| parent_pods.include?(t) }
 
         prebuild_entries.each do |pod|
           target_s += "#{child_indentation}#{pod.prebuilt_entry(false, false)}\n"
@@ -57,7 +63,7 @@ module Pod
 
         if self.children.count > 0
           target_s += "\n"
-          target_s += @children.map { |t| t.pb_to_s(all_buildable_items, indent_level + 1) }.join("\n\n")
+          target_s += @children.map { |t| t.pb_to_s(all_buildable_items, indent_level + 1, parent_pods + pod_entries + prebuild_entries) }.join("\n\n")
         end
 
         target_s += "#{indentation}end\n"
