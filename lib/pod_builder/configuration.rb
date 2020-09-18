@@ -17,6 +17,24 @@ module PodBuilder
     DEFAULT_SPEC_OVERRIDE = {
       "Google-Mobile-Ads-SDK" => {
         "module_name": "GoogleMobileAds"
+      },
+      "React-jsiexecutor" => {
+        "remove_module_maps": ["glog"]
+      }, 
+      "React-Core" => {
+        "remove_module_maps": ["glog"]
+      },
+      "React-Core/Default" => {
+        "public_headers": "React/**/*.{h}"
+      },
+      "React-jsi" => {
+        "remove_module_maps": ["glog"]
+      },
+      "React-cxxreact" => {
+        "remove_module_maps": ["glog"]
+      }, 
+      "Folly" => {
+        "remove_module_maps": ["glog"]
       }
     }.freeze
     DEFAULT_SKIP_PODS = ["GoogleMaps"]

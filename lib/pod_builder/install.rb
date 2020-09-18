@@ -71,6 +71,28 @@ begin
       return res
     end
   end  
+  
+  class Pod::Target::BuildSettings
+    alias_method :swz_save_as, :save_as
+
+    @specs_remove_module_maps = Hash.new
+
+    class << self
+      attr_accessor :specs_remove_module_maps
+    end
+
+    def save_as(path)
+      Pod::Target::BuildSettings.specs_remove_module_maps.each do |root_name, module_maps_to_remove|
+        if target.name == root_name
+          module_maps_to_remove.each do |module_map_to_remove|
+            xcconfig.attributes["OTHER_CFLAGS"] = xcconfig.attributes["OTHER_CFLAGS"].gsub(/-fmodule-map-file=\S*#{module_map_to_remove}.modulemap.*?(\s|$)/, '')
+          end
+        end
+      end
+     
+      swz_save_as(path)
+    end
+  end
 rescue LoadError
   # CocoaPods 1.6.2 or earlier
 end
@@ -100,6 +122,8 @@ module PodBuilder
         FileUtils.touch(lock_file)
         
         use_prebuilt_entries_for_unchanged_pods(podfile_path, podfile_items)
+
+        prepare_for_static_framework_workarounds(podfile_content, podfile_items)
         
         install
         
@@ -132,6 +156,16 @@ module PodBuilder
     end
     
     private 
+
+    def self.prepare_for_static_framework_workarounds(podfile_content, podfile_items)
+      unless podfile_content.include?("use_modular_headers!")
+        return
+      end
+
+      podfile_items.each do |podfile_item|
+        Pod::Target::BuildSettings.specs_remove_module_maps[podfile_item.root_name] = podfile_item.remove_module_maps
+      end
+    end
     
     def self.license_specifiers
       acknowledge_file = "#{Configuration.build_path}/Pods/Target Support Files/Pods-DummyTarget/Pods-DummyTarget-acknowledgements.plist"
@@ -263,7 +297,7 @@ module PodBuilder
         if Dir.empty?(source_path)
           next # When using prebuilt items we end up with empty folders
         end
-        
+
         PodBuilder::safe_rm_rf(PodBuilder::prebuiltpath(prebuilt_name))
         FileUtils.cp_r(source_path, PodBuilder::prebuiltpath)
       end
@@ -283,7 +317,7 @@ module PodBuilder
       write_prebuilt_info_filename_gitattributes
       
       root_names = podfile_items.reject(&:is_prebuilt).map(&:root_name).uniq
-      root_names.each do |prebuilt_name|        
+      root_names.each do |prebuilt_name| 
         path = PodBuilder::prebuiltpath(prebuilt_name)
         
         unless File.directory?(path)
