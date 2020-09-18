@@ -195,7 +195,7 @@ module PodBuilder
       args += ["EXCLUDED_ARCHS=#{exclude_archs.join(" ")}"]
     end
     prebuilt_root_paths.each do |k, v|
-      args += ["#{k.upcase}_PREBUILT_ROOT=#{v.gsub(/ /, '\ ')}"]
+      args += ["#{k.upcase.gsub("-", "_")}_PREBUILT_ROOT=#{v.gsub(/ /, '\ ')}"]
     end
     
     environmental_variables = {}

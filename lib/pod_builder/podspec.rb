@@ -113,7 +113,7 @@ module PodBuilder
           raise "\n\nToo many module maps found for #{item.root_name}".red if module_path_files.count > 1
           if module_path_file = module_path_files.first
             rel_path = Pathname.new(PodBuilder::prebuiltpath).relative_path_from(Pathname.new(PodBuilder::project_path("Pods"))).to_s
-            prebuilt_root_var = "#{item.root_name.upcase}_PREBUILT_ROOT"
+            prebuilt_root_var = "#{item.root_name.upcase.gsub("-", "_")}_PREBUILT_ROOT"
             module_map_rel = module_path_file.gsub(PodBuilder::prebuiltpath("#{item.root_name}/#{item.root_name}/"), "")
             static_cfg = { prebuilt_root_var => "$(PODS_ROOT)/#{rel_path}",
                           "SWIFT_INCLUDE_PATHS" => "$(inherited) \"$(#{prebuilt_root_var})/#{item.root_name}/#{item.root_name}\"",
