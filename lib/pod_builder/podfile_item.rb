@@ -302,7 +302,7 @@ module PodBuilder
       #
       # When building PodA we need to build both DepA subspecs because they might 
       # contain different code
-      deps += available_pods.select { |t| root_names.include?(t.root_name) }
+      deps += available_pods.select { |t| root_names.include?(t.root_name) && t.root_name != t.name && !Configuration.subspecs_to_split.include?(t.name) }
 
       deps.uniq!
 

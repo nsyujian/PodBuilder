@@ -265,7 +265,11 @@ module PodBuilder
           podspec_path = item.prebuilt_podspec_path
           if last_build_folder_hash = build_folder_hash_in_prebuilt_info_file(item)
             if last_build_folder_hash == build_folder_hash(item, gitignored_files)
+              if Configuration.subspecs_to_split.include?(item.name)
+                puts "No changes detected to '#{item.name}', will skip rebuild".blue
+              else
                 puts "No changes detected to '#{item.root_name}', will skip rebuild".blue
+              end
               podfile_items.select { |t| t.root_name == item.root_name }.each do |replace_item|
                 replace_regex = "pod '#{Regexp.quote(replace_item.name)}', .*"
                 replace_line_found = podfile_content =~ /#{replace_regex}/i
@@ -331,25 +335,49 @@ module PodBuilder
 
       non_prebuilt_items = podfile_items.reject(&:is_prebuilt)
       
-      pod_names = non_prebuilt_items.map(&:root_name) + non_prebuilt_items.map { |t| splitted_pod(t, podfile_items) }.compact
+      splitted_pods = non_prebuilt_items.map { |t| splitted_pod(t, podfile_items) }.compact
+      non_prebuilt_items.reject! { |t| splitted_pods.map(&:root_name).include?(t.root_name) }
+
+      pod_names = non_prebuilt_items.map(&:root_name) + splitted_pods.map(&:name)
       pod_names.uniq!
 
-      pod_names.reject! { |t| Dir.empty?(PodBuilder::buildpath_prebuiltpath(t)) } # When using prebuilt items we end up with empty folders
+      pod_names.reject! { |t| 
+        folder_path = PodBuilder::buildpath_prebuiltpath(t)
+        File.directory?(folder_path) && Dir.empty?(folder_path) # When using prebuilt items we end up with empty folders
+      } 
 
+      # Selectively delete destination folder. 
+      # If it's a splitted spec we just need to wipe the Subspecs/#{pod_name}
+      # If it's not we need to wipe everything except the Subspecs folder
       pod_names.each do |pod_name|   
         root_name = pod_name.split("/").first
-        PodBuilder::safe_rm_rf(PodBuilder::prebuiltpath(root_name))
+        if pod_name.include?("/") # Splitted pod
+          PodBuilder::safe_rm_rf(PodBuilder::prebuiltpath("#{root_name}/Subspecs/#{pod_name.gsub("/", "_") }"))
+        else
+          items_to_delete = Dir.glob("#{PodBuilder::prebuiltpath(root_name)}/**/*")
+          items_to_delete.reject! { |t| t.include?(PodBuilder::prebuiltpath("#{root_name}/Subspecs")) }
+
+          items_to_delete.each { |t| PodBuilder::safe_rm_rf(t) }
+        end
       end
 
       pod_names.each do |pod_name|        
-        source_path = PodBuilder::buildpath_prebuiltpath(pod_name)
+        root_name = pod_name.split("/").first
+        source_path = PodBuilder::buildpath_prebuiltpath(root_name)
+
         unless File.directory?(source_path)
           puts "Prebuilt items for #{pod_name} not found".blue
           next
         end
 
+        if Configuration.subspecs_to_split.include?(pod_name)
+          destination_folder = PodBuilder::prebuiltpath("#{root_name}/Subspecs/#{pod_name.gsub("/", "_") }")
+          FileUtils.mkdir_p(destination_folder)
+          FileUtils.cp_r("#{source_path}/.", destination_folder)
+        else
           FileUtils.cp_r(source_path, PodBuilder::prebuiltpath)
         end
+      end
       
       # Folder won't exist if no dSYM were generated (all static libs)
       if File.directory?(PodBuilder::buildpath_dsympath)
