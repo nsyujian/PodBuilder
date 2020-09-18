@@ -86,7 +86,7 @@ begin
         if target.name == root_name
           module_maps_to_remove.each do |module_map_to_remove|
             xcconfig.attributes["OTHER_CFLAGS"] = xcconfig.attributes["OTHER_CFLAGS"].gsub(/-fmodule-map-file=\S*#{module_map_to_remove}.modulemap.*?(\s|$)/, '')
-          end
+           end
         end
       end
      
@@ -127,7 +127,7 @@ module PodBuilder
         
         install
         
-        copy_prebuilt_items(podfile_items)
+        copy_prebuilt_items(podfile_items)        
         add_prebuilt_info_file(podfile_items)
         
         licenses = license_specifiers()
@@ -154,7 +154,49 @@ module PodBuilder
         FileUtils.rm(lock_file) if File.exist?(lock_file)
       end
     end
-    
+
+    def self.add_prebuilt_info_files(podfile_items)
+      gitignored_files = PodBuilder::gitignoredfiles
+      
+      swift_version = PodBuilder::system_swift_version
+
+      write_prebuilt_info_filename_gitattributes
+      
+      root_names = podfile_items.reject(&:is_prebuilt).map(&:root_name).uniq
+      root_names.each do |prebuilt_name| 
+        path = PodBuilder::prebuiltpath(prebuilt_name)
+        
+        unless File.directory?(path)
+          puts "Prebuilt items for #{prebuilt_name} not found".blue
+          next
+        end
+        
+        unless podfile_item = podfile_items.detect { |t| t.name == prebuilt_name } || podfile_items.detect { |t| t.root_name == prebuilt_name }
+          puts "Prebuilt items for #{prebuilt_name} not found #2".blue
+          next
+        end
+        
+        podbuilder_file = File.join(path, Configuration.prebuilt_info_filename)
+        entry = podfile_item.entry(true, false)
+        
+        data = {}
+        data['entry'] = entry
+        data['is_prebuilt'] = podfile_item.is_prebuilt  
+        if Dir.glob(File.join(path, "#{podfile_item.prebuilt_rel_path}/Headers/*-Swift.h")).count > 0
+          data['swift_version'] = swift_version
+        end
+        
+        specs = podfile_items.select { |x| x.module_name == podfile_item.module_name }
+        subspecs_deps = specs.map(&:dependency_names).flatten
+        subspec_self_deps = subspecs_deps.select { |x| x.start_with?("#{prebuilt_name}/") }
+        data['specs'] = (specs.map(&:name) + subspec_self_deps).uniq
+        data['is_static'] = podfile_item.is_static
+        data['original_compile_path'] = Pathname.new(Configuration.build_path).realpath.to_s
+        data['build_folder_hash'] = build_folder_hash(podfile_item, gitignored_files)
+        
+        File.write(podbuilder_file, JSON.pretty_generate(data))
+      end
+    end
     private 
 
     def self.prepare_for_static_framework_workarounds(podfile_content, podfile_items)
@@ -223,7 +265,7 @@ module PodBuilder
           podspec_path = item.prebuilt_podspec_path
           if last_build_folder_hash = build_folder_hash_in_prebuilt_info_file(item)
             if last_build_folder_hash == build_folder_hash(item, gitignored_files)
-              puts "No changes detected to '#{item.root_name}', will skip rebuild".blue
+                puts "No changes detected to '#{item.root_name}', will skip rebuild".blue
               podfile_items.select { |t| t.root_name == item.root_name }.each do |replace_item|
                 replace_regex = "pod '#{Regexp.quote(replace_item.name)}', .*"
                 replace_line_found = podfile_content =~ /#{replace_regex}/i
@@ -294,7 +336,7 @@ module PodBuilder
 
       pod_names.reject! { |t| Dir.empty?(PodBuilder::buildpath_prebuiltpath(t)) } # When using prebuilt items we end up with empty folders
 
-      pod_names.each do |pod_name|        
+      pod_names.each do |pod_name|   
         root_name = pod_name.split("/").first
         PodBuilder::safe_rm_rf(PodBuilder::prebuiltpath(root_name))
       end
@@ -306,56 +348,13 @@ module PodBuilder
           next
         end
 
-        FileUtils.cp_r(source_path, PodBuilder::prebuiltpath)
-      end
+          FileUtils.cp_r(source_path, PodBuilder::prebuiltpath)
+        end
       
       # Folder won't exist if no dSYM were generated (all static libs)
       if File.directory?(PodBuilder::buildpath_dsympath)
         FileUtils.mkdir_p(PodBuilder::dsympath)
         FileUtils.cp_r(PodBuilder::buildpath_dsympath, PodBuilder::basepath)
-      end
-    end
-    
-    def self.add_prebuilt_info_file(podfile_items)
-      gitignored_files = PodBuilder::gitignoredfiles
-      
-      swift_version = PodBuilder::system_swift_version
-
-      write_prebuilt_info_filename_gitattributes
-      
-      root_names = podfile_items.reject(&:is_prebuilt).map(&:root_name).uniq
-      root_names.each do |prebuilt_name| 
-        path = PodBuilder::prebuiltpath(prebuilt_name)
-        
-        unless File.directory?(path)
-          puts "Prebuilt items for #{prebuilt_name} not found".blue
-          next
-        end
-        
-        unless podfile_item = podfile_items.detect { |t| t.name == prebuilt_name } || podfile_items.detect { |t| t.root_name == prebuilt_name }
-          puts "Prebuilt items for #{prebuilt_name} not found #2".blue
-          next
-        end
-        
-        podbuilder_file = File.join(path, Configuration.prebuilt_info_filename)
-        entry = podfile_item.entry(true, false)
-        
-        data = {}
-        data['entry'] = entry
-        data['is_prebuilt'] = podfile_item.is_prebuilt  
-        if Dir.glob(File.join(path, "#{podfile_item.prebuilt_rel_path}/Headers/*-Swift.h")).count > 0
-          data['swift_version'] = swift_version
-        end
-        
-        specs = podfile_items.select { |x| x.module_name == podfile_item.module_name }
-        subspecs_deps = specs.map(&:dependency_names).flatten
-        subspec_self_deps = subspecs_deps.select { |x| x.start_with?("#{prebuilt_name}/") }
-        data['specs'] = (specs.map(&:name) + subspec_self_deps).uniq
-        data['is_static'] = podfile_item.is_static
-        data['original_compile_path'] = Pathname.new(Configuration.build_path).realpath.to_s
-        data['build_folder_hash'] = build_folder_hash(podfile_item, gitignored_files)
-        
-        File.write(podbuilder_file, JSON.pretty_generate(data))
       end
     end
 
