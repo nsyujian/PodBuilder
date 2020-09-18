@@ -83,7 +83,7 @@ module PodBuilder
       simulator_lib = "#{simulator_base}/lib#{module_name}.a"
 
       device_base = "#{build_dir}/#{configuration}-#{device}/#{root_name}" 
-      device_lib = "#{device_base}/lib#{module_name}.a"
+      device_lib = "#{device_base}/lib#{root_name}.a"
   
       if File.file?(device_lib) && File.file?(simulator_lib)
         # Starting with Xcode 12b3 the simulator binary contains an arm64 slice as well which conflict with the one in the device_lib
@@ -120,10 +120,17 @@ module PodBuilder
         FileUtils.cp_r("#{swiftmodule_path}/.", "#{device_base}/#{root_name}.swiftmodule")
       end
 
-      unless File.exist?("#{device_base}/#{root_name}.swiftmodule")
+      if File.exist?("#{device_base}/#{root_name}.swiftmodule")
         # This is a swift pod with a swiftmodule in the root of the prebuilt folder
+      else
         # Objective-C pods have the swiftmodule generated under Pods/Headers/Public
         public_headers_path = "#{Configuration.build_path}/Pods/Headers/Public/#{root_name}"
+        module_public_headers_path = "#{Configuration.build_path}/Pods/Headers/Public/#{module_name}"  
+        if public_headers_path.downcase != module_public_headers_path.downcase && File.directory?(public_headers_path) && File.directory?(module_public_headers_path)
+          # For pods with module_name != name we have to move the modulemap files to the root_name one
+          module_public_headers_path = "#{Configuration.build_path}/Pods/Headers/Public/#{module_name}"  
+          FileUtils.cp_r("#{module_public_headers_path}/.", public_headers_path)
+        end
         Dir.glob("#{public_headers_path}/**/*.*").each do |path|
           destination_folder = "#{device_base}/Headers" + path.gsub(public_headers_path, "")
           destination_folder = File.dirname(destination_folder)
@@ -133,8 +140,7 @@ module PodBuilder
       end
 
       destination_path = "#{build_dir}/#{root_name}"
-      if File.directory?(destination_path)
-        # There are some rare cases where pod produce nothing (e.g. React-RCTActionSheet in RN projects which contains 2 js files)
+      if Dir.glob("#{device_base}/**/*.{a,framework,h}").count > 0
         FileUtils.mv(device_base, destination_path)
 
         module_maps = Dir.glob("#{destination_path}/**/*.modulemap")
