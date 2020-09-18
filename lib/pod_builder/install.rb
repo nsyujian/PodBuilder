@@ -128,7 +128,6 @@ module PodBuilder
         install
         
         copy_prebuilt_items(podfile_items)        
-        add_prebuilt_info_file(podfile_items)
         
         licenses = license_specifiers()
         
