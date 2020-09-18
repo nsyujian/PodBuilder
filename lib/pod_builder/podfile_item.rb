@@ -404,6 +404,9 @@ module PodBuilder
     end
 
     def prebuilt_rel_path
+      ################### TODO
+      ################### TODO
+      ################### TODO
       if is_subspec && Configuration.subspecs_to_split.include?(name)
         return "#{name}/#{module_name}.framework"
       else
@@ -423,11 +426,7 @@ module PodBuilder
     def prebuilt_entry(include_pb_entry = true, absolute_path = false)
       podspec_dirname = File.dirname(prebuilt_podspec_path(absolute_path = absolute_path))
 
-      if Configuration.subspecs_to_split.include?(name)
-        entry = "pod '#{podspec_name}', :path => '#{podspec_dirname}'"
-      else
-        entry = "pod '#{name}', :path => '#{podspec_dirname}'"
-      end
+      entry = "pod '#{name}', :path => '#{podspec_dirname}'"
 
       if include_pb_entry && !is_prebuilt
         entry += prebuilt_marker()

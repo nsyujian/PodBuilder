@@ -286,19 +286,26 @@ module PodBuilder
     
     def self.copy_prebuilt_items(podfile_items)
       FileUtils.mkdir_p(PodBuilder::prebuiltpath)
+
+      non_prebuilt_items = podfile_items.reject(&:is_prebuilt)
       
-      root_names = podfile_items.reject(&:is_prebuilt).map(&:root_name).uniq
-      root_names.each do |prebuilt_name|        
-        source_path = PodBuilder::buildpath_prebuiltpath(prebuilt_name)
+      pod_names = non_prebuilt_items.map(&:root_name) + non_prebuilt_items.map { |t| splitted_pod(t, podfile_items) }.compact
+      pod_names.uniq!
+
+      pod_names.reject! { |t| Dir.empty?(PodBuilder::buildpath_prebuiltpath(t)) } # When using prebuilt items we end up with empty folders
+
+      pod_names.each do |pod_name|        
+        root_name = pod_name.split("/").first
+        PodBuilder::safe_rm_rf(PodBuilder::prebuiltpath(root_name))
+      end
+
+      pod_names.each do |pod_name|        
+        source_path = PodBuilder::buildpath_prebuiltpath(pod_name)
         unless File.directory?(source_path)
-          puts "Prebuilt items for #{prebuilt_name} not found".blue
+          puts "Prebuilt items for #{pod_name} not found".blue
           next
         end
-        if Dir.empty?(source_path)
-          next # When using prebuilt items we end up with empty folders
-        end
 
-        PodBuilder::safe_rm_rf(PodBuilder::prebuiltpath(prebuilt_name))
         FileUtils.cp_r(source_path, PodBuilder::prebuiltpath)
       end
       
@@ -428,5 +435,15 @@ module PodBuilder
         return replace_path
       end
     end 
+
+    def self.splitted_pod(podfile_item, podfile_items)
+      splitted_pods = podfile_items.select { |t| t.root_name == podfile_item.root_name && Configuration.subspecs_to_split.include?(t.name) }
+
+      if splitted_pods.count == 1
+        return splitted_pods[0]
+      else
+        return nil
+      end
+    end
   end
 end
