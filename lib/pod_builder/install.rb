@@ -298,6 +298,13 @@ module PodBuilder
           next # When using prebuilt items we end up with empty folders
         end
 
+        if splitted_pod = splitted_pod(prebuilt_name, podfile_items)
+          prebuilt_name = splitted_pod.podspec_name
+          splitted_source_path = PodBuilder::buildpath_prebuiltpath(prebuilt_name)
+          FileUtils.mv(source_path, splitted_source_path)
+          source_path = splitted_source_path
+        end
+        
         PodBuilder::safe_rm_rf(PodBuilder::prebuiltpath(prebuilt_name))
         FileUtils.cp_r(source_path, PodBuilder::prebuiltpath)
       end
@@ -318,15 +325,22 @@ module PodBuilder
       
       root_names = podfile_items.reject(&:is_prebuilt).map(&:root_name).uniq
       root_names.each do |prebuilt_name| 
+        if splitted_pod = splitted_pod(prebuilt_name, podfile_items)
+          prebuilt_name = splitted_pod.podspec_name
+          podfile_item_name = splitted_pod.name
+        else
+          podfile_item_name = prebuilt_name
+        end
+
         path = PodBuilder::prebuiltpath(prebuilt_name)
         
         unless File.directory?(path)
-          puts "Prebuilt items for #{prebuilt_name} not found".blue
+          puts "Prebuilt items for #{podfile_item_name} not found".blue
           next
         end
         
-        unless podfile_item = podfile_items.detect { |t| t.name == prebuilt_name } || podfile_items.detect { |t| t.root_name == prebuilt_name }
-          puts "Prebuilt items for #{prebuilt_name} not found #2".blue
+        unless podfile_item = podfile_items.detect { |t| t.name == podfile_item_name }
+          puts "Prebuilt items for #{podfile_item_name} not found #2".blue
           next
         end
         
@@ -342,7 +356,7 @@ module PodBuilder
         
         specs = podfile_items.select { |x| x.module_name == podfile_item.module_name }
         subspecs_deps = specs.map(&:dependency_names).flatten
-        subspec_self_deps = subspecs_deps.select { |x| x.start_with?("#{prebuilt_name}/") }
+        subspec_self_deps = subspecs_deps.select { |x| x.start_with?("#{podfile_item_name}/") }
         data['specs'] = (specs.map(&:name) + subspec_self_deps).uniq
         data['is_static'] = podfile_item.is_static
         data['original_compile_path'] = Pathname.new(Configuration.build_path).realpath.to_s
@@ -428,5 +442,14 @@ module PodBuilder
         return replace_path
       end
     end 
+
+    def self.splitted_pod(pod_name, podfile_items)
+      splitted_pods = podfile_items.select { |t| t.root_name == pod_name }
+      if splitted_pods.count == 1 && Configuration.subspecs_to_split.include?(splitted_pods[0].name)
+        return splitted_pods[0]
+      else
+        return nil
+      end
+    end
   end
 end

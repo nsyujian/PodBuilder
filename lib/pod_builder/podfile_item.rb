@@ -302,7 +302,7 @@ module PodBuilder
       #
       # When building PodA we need to build both DepA subspecs because they might 
       # contain different code
-      deps += available_pods.select { |t| root_names.include?(t.root_name) }
+      deps += available_pods.select { |t| root_names.include?(t.root_name) && t.root_name != t.name && !Configuration.subspecs_to_split.include?(t.name) }
 
       deps.uniq!
 
@@ -412,7 +412,11 @@ module PodBuilder
     end
 
     def prebuilt_podspec_path(absolute_path = true)
-      podspec_path = PodBuilder::prebuiltpath("#{@root_name}/#{@root_name}.podspec")
+      if Configuration.subspecs_to_split.include?(@name)
+        podspec_path = PodBuilder::prebuiltpath("#{podspec_name}/#{@root_name}.podspec")
+      else
+        podspec_path = PodBuilder::prebuiltpath("#{@root_name}/#{@root_name}.podspec")
+      end
       if absolute_path 
         return podspec_path
       else
@@ -423,11 +427,7 @@ module PodBuilder
     def prebuilt_entry(include_pb_entry = true, absolute_path = false)
       podspec_dirname = File.dirname(prebuilt_podspec_path(absolute_path = absolute_path))
 
-      if Configuration.subspecs_to_split.include?(name)
-        entry = "pod '#{podspec_name}', :path => '#{podspec_dirname}'"
-      else
-        entry = "pod '#{name}', :path => '#{podspec_dirname}'"
-      end
+      entry = "pod '#{name}', :path => '#{podspec_dirname}'"
 
       if include_pb_entry && !is_prebuilt
         entry += prebuilt_marker()

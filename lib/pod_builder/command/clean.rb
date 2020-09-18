@@ -22,7 +22,8 @@ module PodBuilder
       def self.prebuilt_items(buildable_items)
         puts "Cleaning prebuilt folder".yellow
 
-        root_names = buildable_items.map(&:root_name).uniq
+        root_names = buildable_items.map(&:root_name) + buildable_items.select { |t| Configuration.subspecs_to_split.include?(t.name) }.map(&:podspec_name)
+        root_names.uniq!
         Dir.glob(File.join(PodBuilder::prebuiltpath, "*")).each do |path|
           basename = File.basename(path)
           unless root_names.include?(basename) 
@@ -31,6 +32,7 @@ module PodBuilder
           end
         end
 
+        # We don't need to handle Configuration.subspecs_to_split here since these pods should be static and therefore produce no dSYMs
         puts "Cleaning dSYM folder".yellow
         module_names = buildable_items.map(&:module_name).uniq
         Dir.glob(File.join(PodBuilder::dsympath, "**/*.dSYM")).each do |path|

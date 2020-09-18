@@ -25,7 +25,7 @@ module PodBuilder
       spec_var = "p#{slash_count}"
 
       if item.name == name
-        if_exists = lambda { |t| File.exist?(PodBuilder::prebuiltpath("#{item.root_name}/#{t}") || "") }
+        if_exists = lambda { |t| File.exist?(PodBuilder::prebuiltpath("#{item.podspec_name}/#{t}") || "") }
 
         vendored_frameworks = item.vendored_frameworks + ["#{item.module_name}.framework"]
         existing_vendored_frameworks = vendored_frameworks.select(&if_exists)
@@ -61,7 +61,7 @@ module PodBuilder
           end
           exclude_files.map! { |t| "#{item.root_name}/#{t}" }
         end
-          
+
         if vendored_frameworks.count > 0
           podspec += "#{indentation}#{spec_var}.vendored_frameworks = '#{vendored_frameworks.uniq.sort.join("','")}'\n"
         end      
@@ -177,7 +177,8 @@ module PodBuilder
         if item.is_prebuilt
           next
         end
-        if item.name != item.root_name
+
+        if item.name != item.root_name && !Configuration.subspecs_to_split.include?(item.name)
           if all_buildable_items.map(&:name).include?(item.root_name)
             next # will process root spec, skip subspecs
           end
@@ -200,7 +201,8 @@ module PodBuilder
         podspec += "    p1.#{platform.safe_string_name.downcase}.deployment_target  = '#{platform.deployment_target.version}'\n"
         podspec += "\n"
 
-        main_keys, valid = generate_spec_keys_for(item, item.root_name, all_buildable_items, install_using_frameworks)
+        root_name = Configuration.subspecs_to_split.include?(item.name) ? item.name : item.root_name
+        main_keys, valid = generate_spec_keys_for(item, root_name, all_buildable_items, install_using_frameworks)
         if !valid
           next
         end
