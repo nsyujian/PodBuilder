@@ -26,7 +26,7 @@ module PodBuilder
 
       subspec_prefix = Configuration.subspecs_to_split.include?(item.name) ? "Subspecs/#{item.podspec_name}/" : ""
 
-      if item.name == name || Configuration.subspecs_to_split.include?(item.name)
+      if item.name == name
         if_exists = lambda { |t| File.exist?(PodBuilder::prebuiltpath("#{item.root_name}/#{subspec_prefix}#{t}") || "") }
 
         vendored_frameworks = item.vendored_frameworks + ["#{item.module_name}.framework"]
@@ -132,19 +132,17 @@ module PodBuilder
                         end
         end
   
-        if item.name == name 
-          deps = item.dependency_names.sort
-          if name == item.root_name
-            deps.reject! { |t| t.split("/").first == item.root_name }
+        deps = item.dependency_names.sort
+        if name == item.root_name
+          deps.reject! { |t| t.split("/").first == item.root_name }
+        end
+  
+        if deps.count > 0
+          if podspec.count("\n") > 1
+            podspec += "\n"
           end
-    
-          if deps.count > 0
-            if podspec.count("\n") > 1
-              podspec += "\n"
-            end
-            deps.each do |dependency|
-              podspec += "#{indentation}#{spec_var}.dependency '#{dependency}'\n"
-            end
+          deps.each do |dependency|
+            podspec += "#{indentation}#{spec_var}.dependency '#{dependency}'\n"
           end
         end
 
@@ -172,7 +170,7 @@ module PodBuilder
         end
       end
     
-      return podspec, valid
+      return podspec, (valid || Configuration.subspecs_to_split.include?(item.name))
     end
 
     def self.generate_podspec_from(all_buildable_items, platform, install_using_frameworks)
