@@ -24,8 +24,10 @@ module PodBuilder
       indentation = "    " * slash_count
       spec_var = "p#{slash_count}"
 
-      if item.name == name
-        if_exists = lambda { |t| File.exist?(PodBuilder::prebuiltpath("#{item.root_name}/#{t}") || "") }
+      subspec_prefix = Configuration.subspecs_to_split.include?(item.name) ? "Subspecs/#{item.podspec_name}/" : ""
+
+      if item.name == name || Configuration.subspecs_to_split.include?(item.name)
+        if_exists = lambda { |t| File.exist?(PodBuilder::prebuiltpath("#{item.root_name}/#{subspec_prefix}#{t}") || "") }
 
         vendored_frameworks = item.vendored_frameworks + ["#{item.module_name}.framework"]
         existing_vendored_frameworks = vendored_frameworks.select(&if_exists)
@@ -61,24 +63,30 @@ module PodBuilder
           end
           exclude_files.map! { |t| "#{item.root_name}/#{t}" }
         end
+
+        entries = lambda { |spec_key, spec_value| 
+          key = "#{indentation}#{spec_var}.#{spec_key}"
+          joined_values = spec_value.map { |t| "#{subspec_prefix}#{t}" }.uniq.sort.join("', '")
+          "#{key} = '#{joined_values}'\n" 
+        }
           
         if vendored_frameworks.count > 0
-          podspec += "#{indentation}#{spec_var}.vendored_frameworks = '#{vendored_frameworks.uniq.sort.join("','")}'\n"
+          podspec += entries.call("vendored_frameworks", vendored_frameworks)
         end      
         if vendored_libraries.count > 0
-          podspec += "#{indentation}#{spec_var}.vendored_libraries = '#{vendored_libraries.uniq.sort.join("','")}'\n"
+          podspec += entries.call("vendored_libraries", vendored_libraries)
         end
         if item.frameworks.count > 0
-          podspec += "#{indentation}#{spec_var}.frameworks = '#{item.frameworks.uniq.sort.join("', '")}'\n"
+          podspec += entries.call("frameworks", item.frameworks)
         end
         if item.libraries.count > 0
-          podspec += "#{indentation}#{spec_var}.libraries = '#{item.libraries.uniq.sort.join("', '")}'\n"
+          podspec += entries.call("libraries", item.libraries)
         end
         if resources.count > 0
-          podspec += "#{indentation}#{spec_var}.resources = '#{resources.uniq.sort.join("', '")}'\n"
+          podspec += entries.call("resources", resources)
         end
         if exclude_files.count > 0
-          podspec += "#{indentation}#{spec_var}.exclude_files = '#{exclude_files.uniq.sort.join("', '")}'\n"
+          podspec += entries.call("exclude_files", exclude_files)
         end
         if public_headers.count > 0
           podspec += "#{indentation}#{spec_var}.public_header_files = '#{item.root_name}/Headers/**/*.h'\n"
@@ -124,17 +132,19 @@ module PodBuilder
                         end
         end
   
-        deps = item.dependency_names.sort
-        if name == item.root_name
-          deps.reject! { |t| t.split("/").first == item.root_name }
-        end
-  
-        if deps.count > 0
-          if podspec.count("\n") > 1
-            podspec += "\n"
+        if item.name == name 
+          deps = item.dependency_names.sort
+          if name == item.root_name
+            deps.reject! { |t| t.split("/").first == item.root_name }
           end
-          deps.each do |dependency|
-            podspec += "#{indentation}#{spec_var}.dependency '#{dependency}'\n"
+    
+          if deps.count > 0
+            if podspec.count("\n") > 1
+              podspec += "\n"
+            end
+            deps.each do |dependency|
+              podspec += "#{indentation}#{spec_var}.dependency '#{dependency}'\n"
+            end
           end
         end
 
