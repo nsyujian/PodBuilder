@@ -26,10 +26,18 @@ module PodBuilder
 
       subspec_prefix = Configuration.subspecs_to_split.include?(item.name) ? "Subspecs/#{item.podspec_name}/" : ""
 
+      if spec_var == "p1" && item.default_subspecs.count > 0
+        podspec += "#{indentation}#{spec_var}.default_subspecs = '#{item.default_subspecs.join("', '")}'\n"
+      end
+
       if item.name == name
         if_exists = lambda { |t| File.exist?(PodBuilder::prebuiltpath("#{item.root_name}/#{subspec_prefix}#{t}") || "") }
 
-        vendored_frameworks = item.vendored_frameworks + ["#{item.module_name}.framework"]
+        vendored_frameworks = item.vendored_frameworks 
+        if item.default_subspecs.count == 0 && install_using_frameworks
+          vendored_frameworks += ["#{item.module_name}.framework"]
+        end
+
         existing_vendored_frameworks = vendored_frameworks.select(&if_exists)
         existing_vendored_frameworks_basename = vendored_frameworks.map { |t| File.basename(t) }.select(&if_exists)
         vendored_frameworks = (existing_vendored_frameworks + existing_vendored_frameworks_basename).uniq

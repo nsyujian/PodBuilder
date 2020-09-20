@@ -295,14 +295,16 @@ module PodBuilder
 
       root_names = deps.map(&:root_name).uniq
 
-      # We need to build all other common subspecs to properly build the item
-      # Ex. 
-      # PodA depends on DepA/subspec1
-      # PodB depends on DepA/subspec2
-      #
-      # When building PodA we need to build both DepA subspecs because they might 
-      # contain different code
-      deps += available_pods.select { |t| root_names.include?(t.root_name) && t.root_name != t.name && !Configuration.subspecs_to_split.include?(t.name) }
+      unless Configuration.subspecs_to_split.include?(name)
+        # We need to build all other common subspecs to properly build the item
+        # Ex. 
+        # PodA depends on DepA/subspec1
+        # PodB depends on DepA/subspec2
+        #
+        # When building PodA we need to build both DepA subspecs because they might 
+        # contain different code
+        deps += available_pods.select { |t| root_names.include?(t.root_name) && t.root_name != t.name && !Configuration.subspecs_to_split.include?(t.name) }
+      end
 
       deps.uniq!
 
