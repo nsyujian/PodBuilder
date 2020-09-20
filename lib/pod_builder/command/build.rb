@@ -78,31 +78,26 @@ module PodBuilder
         podfiles_items.push(pods_to_build_debug)
         podfiles_items.push(pods_to_build_release)   
 
-        licenses = []
-
         install_using_frameworks = Podfile::install_using_frameworks(analyzer)
         
-        build_pods = []
+        install_result = InstallResult.new
         podfiles_items.select { |x| x.count > 0 }.each do |podfile_items|
           build_configuration = podfile_items.map(&:build_configuration).uniq.first
           
           podfile_items = podfile_items.map { |t| t.recursive_dependencies(all_buildable_items) }.flatten.uniq
           podfile_content = Podfile.from_podfile_items(podfile_items, analyzer, build_configuration, install_using_frameworks)
-          build_pods += podfile_items
           
-          licenses += Install.podfile(podfile_content, podfile_items, podfile_items.first.build_configuration)          
+          install_result += Install.podfile(podfile_content, podfile_items, podfile_items.first.build_configuration)          
           
           # remove lockfile which gets unexplicably created
           FileUtils.rm_f(PodBuilder::basepath("Podfile.lock"))
         end
 
-        # This should be done after all pods have been built to avoid podfile_items in the previous loop
-        # being replaced with prebuilt items (use_prebuilt_entries_for_unchanged_pods)
-        Install.add_prebuilt_info_files(build_pods)
+        install_result.write_prebuilt_info_files
 
         Clean::prebuilt_items(all_buildable_items)
 
-        Licenses::write(licenses, all_buildable_items)
+        Licenses::write(install_result.licenses, all_buildable_items)
 
         Podspec::generate(all_buildable_items, analyzer, install_using_frameworks)
 

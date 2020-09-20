@@ -404,11 +404,8 @@ module PodBuilder
     end
 
     def prebuilt_rel_path
-      ################### TODO
-      ################### TODO
-      ################### TODO
       if is_subspec && Configuration.subspecs_to_split.include?(name)
-        return "#{name}/#{module_name}.framework"
+        return "Subspecs/#{podspec_name}/#{module_name}.framework"
       else
         return "#{module_name}.framework"
       end

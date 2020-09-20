@@ -98,6 +98,44 @@ rescue LoadError
 end
 
 module PodBuilder
+  class InstallResult
+    # @return [Array<Hash>] The installed licenses
+    #
+    attr_reader :licenses
+
+    # @return [Hash] A hash containing the expected prebuilt_info filename and content
+    #
+    attr_reader :prebuilt_info
+
+    def initialize(licenses = [], prebuilt_info = Hash.new)
+      @licenses = licenses
+      @prebuilt_info = prebuilt_info
+    end
+
+    def +(obj) 
+      merged_licenses = @licenses.dup + obj.licenses
+      merged_prebuilt_info = @prebuilt_info.dup
+
+      merged_prebuilt_info.each do |key, value|
+        if obj.prebuilt_info.has_key?(key)
+          specs = merged_prebuilt_info[key]["specs"] || []
+          specs += (obj.prebuilt_info[key]["specs"] || [])
+          merged_prebuilt_info[key]["specs"] = specs.uniq
+        end
+      end
+
+      merged_prebuilt_info = obj.prebuilt_info.merge(merged_prebuilt_info)
+
+      return InstallResult.new(merged_licenses, merged_prebuilt_info) 
+    end
+
+    def write_prebuilt_info_files
+      prebuilt_info.each do |file_path, file_content|
+        File.write(file_path, JSON.pretty_generate(file_content))
+      end
+    end
+  end
+
   class Install
     # This method will generate prebuilt data by building from "/tmp/pod_builder/Podfile"
     def self.podfile(podfile_content, podfile_items, build_configuration)
@@ -121,21 +159,22 @@ module PodBuilder
         lock_file = "#{Configuration.build_path}/pod_builder.lock"
         FileUtils.touch(lock_file)
         
-        use_prebuilt_entries_for_unchanged_pods(podfile_path, podfile_items)
+        prebuilt_entries = use_prebuilt_entries_for_unchanged_pods(podfile_path, podfile_items)
 
         prepare_for_static_framework_workarounds(podfile_content, podfile_items)
         
         install
         
-        copy_prebuilt_items(podfile_items)        
-        
+        copy_prebuilt_items(podfile_items - prebuilt_entries)   
+
+        prebuilt_info = prebuilt_info(podfile_items)
         licenses = license_specifiers()
         
         if !OPTIONS.has_key?(:debug)
           PodBuilder::safe_rm_rf(Configuration.build_path)
         end  
         
-        return licenses
+        return InstallResult.new(licenses, prebuilt_info)
       rescue Exception => e
         if File.directory?("#{Configuration.build_path}/Pods/Pods.xcodeproj")
           if ENV['DEBUGGING']
@@ -154,13 +193,14 @@ module PodBuilder
       end
     end
 
-    def self.add_prebuilt_info_files(podfile_items)
+    def self.prebuilt_info(podfile_items)
       gitignored_files = PodBuilder::gitignoredfiles
       
       swift_version = PodBuilder::system_swift_version
 
       write_prebuilt_info_filename_gitattributes
       
+      ret = Hash.new
       root_names = podfile_items.reject(&:is_prebuilt).map(&:root_name).uniq
       root_names.each do |prebuilt_name| 
         path = PodBuilder::prebuiltpath(prebuilt_name)
@@ -191,10 +231,14 @@ module PodBuilder
         data['specs'] = (specs.map(&:name) + subspec_self_deps).uniq
         data['is_static'] = podfile_item.is_static
         data['original_compile_path'] = Configuration.build_path.gsub(/^\/private/, "") # Use realpath for /private/tmp
-        data['build_folder_hash'] = build_folder_hash(podfile_item, gitignored_files)
+        if hash = build_folder_hash(podfile_item, gitignored_files)
+          data['build_folder_hash'] = hash
+        end
         
-        File.write(podbuilder_file, JSON.pretty_generate(data))
+        ret.merge!({ podbuilder_file => data })
       end
+
+      return ret
     end
     private 
 
@@ -249,6 +293,8 @@ module PodBuilder
     def self.use_prebuilt_entries_for_unchanged_pods(podfile_path, podfile_items)
       podfile_content = File.read(podfile_path)
       
+      replaced_items = []
+
       if OPTIONS.has_key?(:force_rebuild)
         podfile_content.gsub!("%%%prebuilt_root_paths%%%", "{}")
       else
@@ -256,8 +302,8 @@ module PodBuilder
 
         gitignored_files = PodBuilder::gitignoredfiles
 
-        replaced_items = Hash.new
-        
+        prebuilt_root_paths = Hash.new
+
         # Replace prebuilt entries in Podfile for Pods that have no changes in source code which will avoid rebuilding them
         items = podfile_items.group_by { |t| t.root_name }.map { |k, v| v.first } # Return one podfile_item per root_name
         items.each do |item|
@@ -269,19 +315,21 @@ module PodBuilder
               else
                 puts "No changes detected to '#{item.root_name}', will skip rebuild".blue
               end
+              replaced_items.push(item)
+
               podfile_items.select { |t| t.root_name == item.root_name }.each do |replace_item|
                 replace_regex = "pod '#{Regexp.quote(replace_item.name)}', .*"
                 replace_line_found = podfile_content =~ /#{replace_regex}/i
                 raise "\n\nFailed finding pod entry for '#{replace_item.name}'".red unless replace_line_found
                 podfile_content.gsub!(/#{replace_regex}/, replace_item.prebuilt_entry(true, true))
 
-                replaced_items[replace_item.root_name] = PodBuilder::prebuiltpath
+                prebuilt_root_paths[replace_item.root_name] = PodBuilder::prebuiltpath
               end
             end
           end
         end
 
-        podfile_content.gsub!("%%%prebuilt_root_paths%%%", replaced_items.to_s)
+        podfile_content.gsub!("%%%prebuilt_root_paths%%%", prebuilt_root_paths.to_s)
       end
 
       File.write(podfile_path, podfile_content)
@@ -438,7 +486,11 @@ module PodBuilder
       else
         # Pod folder might be under .gitignore
         item_path = "#{Configuration.build_path}/Pods/#{podfile_item.root_name}"
-        return `find '#{item_path}' -type f -print0 | sort -z | xargs -0 shasum | shasum | cut -d' ' -f1`.strip()
+        if File.directory?(item_path)
+          return `find '#{item_path}' -type f -print0 | sort -z | xargs -0 shasum | shasum | cut -d' ' -f1`.strip()
+        else
+          return nil
+        end
       end
     end
     
