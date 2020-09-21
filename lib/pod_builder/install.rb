@@ -419,11 +419,12 @@ module PodBuilder
 
         if Configuration.subspecs_to_split.include?(pod_name)
           destination_folder = PodBuilder::prebuiltpath("#{root_name}/Subspecs/#{pod_name.gsub("/", "_") }")
-          FileUtils.mkdir_p(destination_folder)
-          FileUtils.cp_r("#{source_path}/.", destination_folder)
         else
-          FileUtils.cp_r(source_path, PodBuilder::prebuiltpath)
+          destination_folder = PodBuilder::prebuiltpath(root_name)
         end
+
+        FileUtils.mkdir_p(destination_folder)
+        FileUtils.cp_r("#{source_path}/.", destination_folder)
       end
       
       # Folder won't exist if no dSYM were generated (all static libs)
