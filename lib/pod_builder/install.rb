@@ -408,6 +408,7 @@ module PodBuilder
         end
       end
 
+      # Now copy
       pod_names.each do |pod_name|        
         root_name = pod_name.split("/").first
         source_path = PodBuilder::buildpath_prebuiltpath(root_name)
