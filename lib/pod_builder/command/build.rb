@@ -49,7 +49,7 @@ module PodBuilder
 
         restore_file_error = Podfile.restore_file_sanity_check
   
-        check_splitted_subspecs_are_static(all_buildable_items)
+        check_splitted_subspecs_are_buildable(all_buildable_items)
         check_pods_exists(argument_pods, all_buildable_items)
 
         pods_to_build = resolve_pods_to_build(argument_pods, buildable_items)
@@ -139,6 +139,22 @@ module PodBuilder
         buildable_items = buildable_items.map(&:root_name)
         pods.each do |pod|
           raise "\n\nPod `#{pod}` wasn't found in Podfile.\n\nFound:\n#{buildable_items.join("\n")}\n\n".red if !buildable_items.include?(pod)
+        end
+      end
+
+      def self.check_splitted_subspecs_are_buildable(all_buildable_items)
+        check_splitted_subspecs_are_static(all_buildable_items)
+        check_splitted_subspecs_have_valid_dependencies(all_buildable_items)
+      end
+
+      def self.check_splitted_subspecs_have_valid_dependencies(all_buildable_items)
+        splitted_items = all_buildable_items.select { |t| Configuration.subspecs_to_split.include?(t.name) }
+        splitted_items.each do |splitted_item|
+          common_deps = splitted_item.dependency_names.select { |t| t.start_with?(splitted_item.root_name) }
+
+          if common_deps.count > 0
+            raise "\n\n🚨️  Subspecs included in 'subspecs_to_split' cannot have dependencies to other subspecs within the spec.\n\n#{splitted_item.name} has dependencies to: '#{common_deps.join(', ')}'\n\n".red
+          end
         end
       end
 
