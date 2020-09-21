@@ -81,7 +81,7 @@ module PodBuilder
         install_using_frameworks = Podfile::install_using_frameworks(analyzer)
         
         install_result = InstallResult.new
-        podfiles_items.select { |x| x.count > 0 }.each do |podfile_items|
+        podfiles_items.reject { |x| x.empty? }.each do |podfile_items|
           build_configuration = podfile_items.map(&:build_configuration).uniq.first
           
           podfile_items = podfile_items.map { |t| t.recursive_dependencies(all_buildable_items) }.flatten.uniq
