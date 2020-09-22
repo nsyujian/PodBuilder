@@ -219,20 +219,20 @@ module PodBuilder
         entry = podfile_item.entry(true, false)
         
         data = {}
-        data['entry'] = entry
-        data['is_prebuilt'] = podfile_item.is_prebuilt  
+        data["entry"] = entry
+        data["is_prebuilt"] = podfile_item.is_prebuilt  
         if Dir.glob(File.join(path, "#{podfile_item.prebuilt_rel_path}/Headers/*-Swift.h")).count > 0
-          data['swift_version'] = swift_version
+          data["swift_version"] = swift_version
         end
         
         specs = podfile_items.select { |x| x.module_name == podfile_item.module_name }
         subspecs_deps = specs.map(&:dependency_names).flatten
         subspec_self_deps = subspecs_deps.select { |x| x.start_with?("#{prebuilt_name}/") }
-        data['specs'] = (specs.map(&:name) + subspec_self_deps).uniq
-        data['is_static'] = podfile_item.is_static
-        data['original_compile_path'] = Configuration.build_path.gsub(/^\/private/, "") # Use realpath for /private/tmp
+        data["specs"] = (specs.map(&:name) + subspec_self_deps).uniq
+        data["is_static"] = podfile_item.is_static
+        data["original_compile_path"] = Configuration.build_path.gsub(/^\/private/, "") # Use realpath for /private/tmp
         if hash = build_folder_hash(podfile_item, gitignored_files)
-          data['build_folder_hash'] = hash
+          data["build_folder_hash"] = hash
         end
         
         ret.merge!({ podbuilder_file => data })
