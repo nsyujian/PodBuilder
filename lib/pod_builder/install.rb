@@ -381,12 +381,13 @@ module PodBuilder
       FileUtils.mkdir_p(PodBuilder::prebuiltpath)
 
       non_prebuilt_items = podfile_items.reject(&:is_prebuilt)
-      
-      splitted_pods = non_prebuilt_items.map { |t| splitted_pod(t, podfile_items) }.compact
-      non_prebuilt_items.reject! { |t| splitted_pods.map(&:root_name).include?(t.root_name) }
 
-      pod_names = non_prebuilt_items.map(&:root_name) + splitted_pods.map(&:name)
-      pod_names.uniq!
+      splitted_pods = non_prebuilt_items.map { |t| splitted_pod(t, podfile_items) }.flatten.uniq
+      splitted_pods_root_name = splitted_pods.map { |t| t.root_name }.uniq
+      raise "\n\nUnexpected multiple splitted_pods_root_name" if splitted_pods_root_name.count > 1
+      splitted_pods_root_name = splitted_pods_root_name.first
+
+      pod_names = non_prebuilt_items.reject { |t| t.root_name == splitted_pods_root_name }.map(&:root_name).uniq + splitted_pods.map(&:name)
 
       pod_names.reject! { |t| 
         folder_path = PodBuilder::buildpath_prebuiltpath(t)
@@ -409,6 +410,7 @@ module PodBuilder
       end
 
       # Now copy
+      splitted_items_copied = false
       pod_names.each do |pod_name|        
         root_name = pod_name.split("/").first
         source_path = PodBuilder::buildpath_prebuiltpath(root_name)
@@ -420,12 +422,16 @@ module PodBuilder
 
         if Configuration.subspecs_to_split.include?(pod_name)
           destination_folder = PodBuilder::prebuiltpath("#{root_name}/Subspecs/#{pod_name.gsub("/", "_") }")
+          FileUtils.mkdir_p(destination_folder)
+          unless splitted_items_copied
+            FileUtils.cp_r("#{source_path}/.", destination_folder)              
+            splitted_items_copied = true
+          end
         else
           destination_folder = PodBuilder::prebuiltpath(root_name)
+          FileUtils.mkdir_p(destination_folder)
+          FileUtils.cp_r("#{source_path}/.", destination_folder)  
         end
-
-        FileUtils.mkdir_p(destination_folder)
-        FileUtils.cp_r("#{source_path}/.", destination_folder)
       end
       
       # Folder won't exist if no dSYM were generated (all static libs)
@@ -517,13 +523,7 @@ module PodBuilder
     end 
 
     def self.splitted_pod(podfile_item, podfile_items)
-      splitted_pods = podfile_items.select { |t| t.root_name == podfile_item.root_name && Configuration.subspecs_to_split.include?(t.name) }
-
-      if splitted_pods.count == 1
-        return splitted_pods[0]
-      else
-        return nil
-      end
+      return podfile_items.select { |t| t.root_name == podfile_item.root_name && Configuration.subspecs_to_split.include?(t.name) }
     end
   end
 end

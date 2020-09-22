@@ -62,19 +62,19 @@ module PodBuilder
 
         check_not_building_development_pods(pods_to_build)
 
-        pods_to_build_subspecs = pods_to_build.select { |x| x.is_subspec && Configuration.subspecs_to_split.include?(x.name) }
+        pods_to_build_subspecs = splitted_pods_to_build(pods_to_build, installer)
 
         # Remove dependencies from pods to build
         all_dependencies_name = pods_to_build.map(&:dependency_names).flatten.uniq
         pods_to_build.select! { |x| !all_dependencies_name.include?(x.name) }
 
-        pods_to_build -= pods_to_build_subspecs
+        pods_to_build -= pods_to_build_subspecs.flatten
         pods_to_build_debug = pods_to_build.select { |x| x.build_configuration == "debug" }
         pods_to_build_release = pods_to_build - pods_to_build_debug
 
         check_dependencies_build_configurations(all_buildable_items)
 
-        podfiles_items = pods_to_build_subspecs.map { |x| [x] }
+        podfiles_items = pods_to_build_subspecs
         podfiles_items.push(pods_to_build_debug)
         podfiles_items.push(pods_to_build_release)   
 
@@ -124,6 +124,20 @@ module PodBuilder
       end
 
       private
+
+      def self.splitted_pods_to_build(pods_to_build, installer)
+        specs_by_target = installer.analysis_result.specs_by_target
+
+        pods_to_build_subspecs = pods_to_build.select { |x| x.is_subspec && Configuration.subspecs_to_split.include?(x.name) }
+        
+        pods = []
+        specs_by_target.each do |target, specs|
+          grouped = pods_to_build_subspecs.group_by { |t| specs.map(&:name).include?(t.name) }
+          pods.push(grouped[true])
+        end
+
+        return pods.compact
+      end
 
       def self.check_not_building_subspecs(pods_to_build)
         pods_to_build.each do |pod_to_build|

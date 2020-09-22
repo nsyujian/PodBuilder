@@ -30,7 +30,9 @@ module PodBuilder
         podspec += "#{indentation}#{spec_var}.default_subspecs = '#{item.default_subspecs.join("', '")}'\n"
       end
 
-      if item.name == name
+      if subspec_prefix.length > 0 && Dir["#{PodBuilder::prebuiltpath("#{item.root_name}/#{subspec_prefix}")}/*"].empty?
+        podspec += "#{indentation}#{spec_var}.source_files = '*.splittedspec'\n"
+      elsif item.name == name
         if_exists = lambda { |t| File.exist?(PodBuilder::prebuiltpath("#{item.root_name}/#{subspec_prefix}#{t}") || "") }
 
         vendored_frameworks = item.vendored_frameworks 
