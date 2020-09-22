@@ -23,11 +23,24 @@ module PodBuilder
         puts "Cleaning prebuilt folder".yellow
 
         root_names = buildable_items.map(&:root_name).uniq
-        Dir.glob(File.join(PodBuilder::prebuiltpath, "*")).each do |path|
+        Dir.glob(PodBuilder::prebuiltpath("*")).each do |path|
           basename = File.basename(path)
           unless root_names.include?(basename) 
             puts "Cleanining up `#{basename}`, no longer found among dependencies".blue
             PodBuilder::safe_rm_rf(path)
+          end
+        end
+
+        splitted_specs = buildable_items.select { |t| Configuration.subspecs_to_split.include?(t.name) }
+        splitted_specs.each do |splitted_spec|
+          root_name = splitted_spec.root_name
+
+          Dir.glob(PodBuilder::prebuiltpath("#{root_name}/Subspecs/*")).each do |path|
+            basename = File.basename(path)
+            unless splitted_specs.map(&:podspec_name).include?(basename)
+              puts "Cleanining up `#{root_name}/#{basename}`, no longer found among dependencies".blue
+              PodBuilder::safe_rm_rf(path)
+            end
           end
         end
 
