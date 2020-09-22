@@ -217,6 +217,9 @@ module PodBuilder
         
         podbuilder_file = File.join(path, Configuration.prebuilt_info_filename)
         entry = podfile_item.entry(true, false)
+        if Configuration.subspecs_to_split.include?(podfile_item.name)
+          entry.gsub!("'#{podfile_item.name}'", "'#{podfile_item.root_name}'")
+        end
         
         data = {}
         data["entry"] = entry
@@ -384,10 +387,8 @@ module PodBuilder
 
       splitted_pods = non_prebuilt_items.map { |t| splitted_pod(t, podfile_items) }.flatten.uniq
       splitted_pods_root_name = splitted_pods.map { |t| t.root_name }.uniq
-      raise "\n\nUnexpected multiple splitted_pods_root_name" if splitted_pods_root_name.count > 1
-      splitted_pods_root_name = splitted_pods_root_name.first
 
-      pod_names = non_prebuilt_items.reject { |t| t.root_name == splitted_pods_root_name }.map(&:root_name).uniq + splitted_pods.map(&:name)
+      pod_names = non_prebuilt_items.reject { |t| splitted_pods_root_name.include?(t.root_name) }.map(&:root_name).uniq + splitted_pods.map(&:name)
 
       pod_names.reject! { |t| 
         folder_path = PodBuilder::buildpath_prebuiltpath(t)
