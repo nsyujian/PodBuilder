@@ -49,7 +49,7 @@ module PodBuilder
 
         restore_file_error = Podfile.restore_file_sanity_check
   
-        check_splitted_subspecs_are_buildable(all_buildable_items)
+        check_splitted_subspecs_are_buildable(all_buildable_items, installer)
         check_pods_exists(argument_pods, all_buildable_items)
 
         pods_to_build = resolve_pods_to_build(argument_pods, buildable_items)
@@ -142,9 +142,10 @@ module PodBuilder
         end
       end
 
-      def self.check_splitted_subspecs_are_buildable(all_buildable_items)
+      def self.check_splitted_subspecs_are_buildable(all_buildable_items, installer)
         check_splitted_subspecs_are_static(all_buildable_items)
         check_splitted_subspecs_have_valid_dependencies(all_buildable_items)
+        check_splitted_subspecs_not_in_multiple_targets(all_buildable_items, installer)
       end
 
       def self.check_splitted_subspecs_have_valid_dependencies(all_buildable_items)
@@ -154,6 +155,20 @@ module PodBuilder
 
           if common_deps.count > 0
             raise "\n\n🚨️  Subspecs included in 'subspecs_to_split' cannot have dependencies to other subspecs within the spec.\n\n#{splitted_item.name} has dependencies to: '#{common_deps.join(', ')}'\n\n".red
+          end
+        end
+      end
+
+      def self.check_splitted_subspecs_not_in_multiple_targets(all_buildable_items, installer)
+        specs_by_target = installer.analysis_result.specs_by_target
+
+        flat_item_names = specs_by_target.values.flatten.map(&:name)
+
+        splitted_items = all_buildable_items.select { |t| Configuration.subspecs_to_split.include?(t.name) }
+
+        splitted_items.each do |splitted_item|
+          if flat_item_names.count(splitted_item.name) > 1
+            raise "\n\n'#{splitted_item.name}' is included in 'subspecs_to_split' but it is used in multiple targets. This is unsupported.\nIf possible duplicate the subspec '#{splitted_item.name}' in the podspec using different names for each target.\n".red
           end
         end
       end
