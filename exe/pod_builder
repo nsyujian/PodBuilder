@@ -375,7 +375,7 @@ begin
 rescue Exception => e
   error = e.to_s
 
-  if error.length < 1000
+  if error.length < 1000 || !File.directory?(PodBuilder::Configuration.build_path)
     puts "#{error.red}\n"
     puts e.backtrace.join("\n\t").red
     puts "\n\nCommand failed!".red
