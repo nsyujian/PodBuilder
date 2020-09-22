@@ -168,7 +168,7 @@ module PodBuilder
           common_deps = splitted_item.dependency_names.select { |t| t.start_with?(splitted_item.root_name) }
 
           if common_deps.count > 0
-            raise "\n\n🚨️  Subspecs included in 'subspecs_to_split' cannot have dependencies to other subspecs within the spec.\n\n#{splitted_item.name} has dependencies to: '#{common_deps.join(', ')}'\n\n".red
+            raise "\n\nSubspecs included in 'subspecs_to_split' cannot have dependencies to other subspecs within the spec.\n\n#{splitted_item.name} has dependencies to: '#{common_deps.join(', ')}'\n\n".red
           end
         end
       end
@@ -199,9 +199,9 @@ module PodBuilder
 
         warn_message = "The following pods `#{invalid_subspecs.join(" ")}` are non static binaries which are being splitted over different targets. Beware that this is an unsafe setup as per https://github.com/CocoaPods/CocoaPods/issues/5708 and https://github.com/CocoaPods/CocoaPods/issues/5643\n\nYou can ignore this error by passing the `--allow-warnings` flag to the build command\n"
         if OPTIONS[:allow_warnings]
-          puts "\n\n⚠️  #{warn_message}".yellow
+          puts "\n\n#{warn_message}".yellow
         else
-          raise "\n\n🚨️  #{warn_message}".red
+          raise "\n\n#{warn_message}".red
         end
       end
 
@@ -244,9 +244,9 @@ module PodBuilder
         if !expected_stripped.all? { |x| stripped_lines.include?(x) }
           warn_message = "PodBuilder's post install actions missing from application Podfile!\n"
           if OPTIONS[:allow_warnings]
-            puts "\n\n⚠️  #{warn_message}".yellow
+            puts "\n\n#{warn_message}".yellow
           else
-            raise "\n\n🚨️  #{warn_message}".red
+            raise "\n\n#{warn_message}".red
           end
         end
       end
