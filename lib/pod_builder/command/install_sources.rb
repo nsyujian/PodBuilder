@@ -22,12 +22,12 @@ module PodBuilder
         framework_files.each do |path|
           rel_path = Pathname.new(path).relative_path_from(Pathname.new(base_path)).to_s
 
-          if podfile_spec = podfile_items.detect { |x| x.prebuilt_rel_path == rel_path }
+          if podfile_spec = podfile_items.detect { |x| "#{x.root_name}/#{x.prebuilt_rel_path}" == rel_path }
             update_repo(podfile_spec)
           end
         end
 
-        Command::Clean::clean_sources(podspec_names)
+        Clean::install_sources(podfile_items)
 
         ARGV << PodBuilder::basepath("Sources")
 
