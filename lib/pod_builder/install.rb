@@ -233,7 +233,7 @@ module PodBuilder
         subspec_self_deps = subspecs_deps.select { |x| x.start_with?("#{prebuilt_name}/") }
         data["specs"] = (specs.map(&:name) + subspec_self_deps).uniq
         data["is_static"] = podfile_item.is_static
-        data["original_compile_path"] = Configuration.build_path
+        data["original_compile_path"] = Pathname.new(Configuration.build_path).realpath.to_s
         if hash = build_folder_hash(podfile_item, gitignored_files)
           data["build_folder_hash"] = hash
         end
