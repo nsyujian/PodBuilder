@@ -24,16 +24,12 @@ module PodBuilder
       indentation = "    " * slash_count
       spec_var = "p#{slash_count}"
 
-      subspec_prefix = Configuration.subspecs_to_split.include?(item.name) ? "Subspecs/#{item.podspec_name}/" : ""
-
       if spec_var == "p1" && item.default_subspecs.count > 0
         podspec += "#{indentation}#{spec_var}.default_subspecs = '#{item.default_subspecs.join("', '")}'\n"
       end
 
-      if subspec_prefix.length > 0 && Dir["#{PodBuilder::prebuiltpath("#{item.root_name}/#{subspec_prefix}")}/*"].empty?
-        podspec += "#{indentation}#{spec_var}.source_files = '*.splittedspec'\n"
-      elsif item.name == name
-        if_exists = lambda { |t| File.exist?(PodBuilder::prebuiltpath("#{item.root_name}/#{subspec_prefix}#{t}") || "") }
+      if item.name == name
+        if_exists = lambda { |t| File.exist?(PodBuilder::prebuiltpath("#{item.root_name}/#{t}") || "") }
 
         vendored_frameworks = item.vendored_frameworks 
         if item.default_subspecs.count == 0 && install_using_frameworks
@@ -76,7 +72,7 @@ module PodBuilder
 
         entries = lambda { |spec_key, spec_value| 
           key = "#{indentation}#{spec_var}.#{spec_key}"
-          joined_values = spec_value.map { |t| "#{subspec_prefix}#{t}" }.uniq.sort.join("', '")
+          joined_values = spec_value.map { |t| "#{t}" }.uniq.sort.join("', '")
           "#{key} = '#{joined_values}'\n" 
         }
           
@@ -180,7 +176,7 @@ module PodBuilder
         end
       end
     
-      return podspec, (valid || Configuration.subspecs_to_split.include?(item.name))
+      return podspec, valid
     end
 
     def self.generate_podspec_from(all_buildable_items, platform, install_using_frameworks)

@@ -49,34 +49,27 @@ module PodBuilder
 
         restore_file_error = Podfile.restore_file_sanity_check
   
-        check_splitted_subspecs_are_buildable(all_buildable_items, installer)
         check_pods_exists(argument_pods, all_buildable_items)
 
         pods_to_build = resolve_pods_to_build(argument_pods, buildable_items)
         buildable_items -= pods_to_build
 
         # We need to split pods to build in 3 groups
-        # 1. subspecs: because the resulting .framework path is treated differently when added to Configuration.subspecs_to_split
-        # 2. pods to build in release
-        # 3. pods to build in debug
+        # 1. pods to build in release
+        # 2. pods to build in debug
 
         check_not_building_development_pods(pods_to_build)
-
-        pods_to_build_subspecs = splitted_pods_to_build(pods_to_build, installer)
 
         # Remove dependencies from pods to build
         all_dependencies_name = pods_to_build.map(&:dependency_names).flatten.uniq
         pods_to_build.select! { |x| !all_dependencies_name.include?(x.name) }
 
-        pods_to_build -= pods_to_build_subspecs.flatten
         pods_to_build_debug = pods_to_build.select { |x| x.build_configuration == "debug" }
         pods_to_build_release = pods_to_build - pods_to_build_debug
 
         check_dependencies_build_configurations(all_buildable_items)
 
-        podfiles_items = pods_to_build_subspecs
-        podfiles_items.push(pods_to_build_debug)
-        podfiles_items.push(pods_to_build_release)   
+        podfiles_items = [pods_to_build_debug] + [pods_to_build_release]
 
         install_using_frameworks = Podfile::install_using_frameworks(analyzer)
         
@@ -125,20 +118,6 @@ module PodBuilder
 
       private
 
-      def self.splitted_pods_to_build(pods_to_build, installer)
-        specs_by_target = installer.analysis_result.specs_by_target
-
-        pods_to_build_subspecs = pods_to_build.select { |x| x.is_subspec && Configuration.subspecs_to_split.include?(x.name) }
-        
-        pods = []
-        specs_by_target.each do |target, specs|
-          grouped = pods_to_build_subspecs.group_by { |t| specs.map(&:name).include?(t.name) }
-          pods.push(grouped[true])
-        end
-
-        return pods.compact
-      end
-
       def self.check_not_building_subspecs(pods_to_build)
         pods_to_build.each do |pod_to_build|
           if pod_to_build.include?("/")
@@ -153,55 +132,6 @@ module PodBuilder
         buildable_items = buildable_items.map(&:root_name)
         pods.each do |pod|
           raise "\n\nPod `#{pod}` wasn't found in Podfile.\n\nFound:\n#{buildable_items.join("\n")}\n\n".red if !buildable_items.include?(pod)
-        end
-      end
-
-      def self.check_splitted_subspecs_are_buildable(all_buildable_items, installer)
-        check_splitted_subspecs_are_static(all_buildable_items)
-        check_splitted_subspecs_have_valid_dependencies(all_buildable_items)
-        check_splitted_subspecs_not_in_multiple_targets(all_buildable_items, installer)
-      end
-
-      def self.check_splitted_subspecs_have_valid_dependencies(all_buildable_items)
-        splitted_items = all_buildable_items.select { |t| Configuration.subspecs_to_split.include?(t.name) }
-        splitted_items.each do |splitted_item|
-          common_deps = splitted_item.dependency_names.select { |t| t.start_with?(splitted_item.root_name) }
-
-          if common_deps.count > 0
-            raise "\n\nSubspecs included in 'subspecs_to_split' cannot have dependencies to other subspecs within the spec.\n\n#{splitted_item.name} has dependencies to: '#{common_deps.join(', ')}'\n\n".red
-          end
-        end
-      end
-
-      def self.check_splitted_subspecs_not_in_multiple_targets(all_buildable_items, installer)
-        specs_by_target = installer.analysis_result.specs_by_target
-
-        flat_item_names = specs_by_target.values.flatten.map(&:name)
-
-        splitted_items = all_buildable_items.select { |t| Configuration.subspecs_to_split.include?(t.name) }
-
-        splitted_items.each do |splitted_item|
-          if flat_item_names.count(splitted_item.name) > 1
-            raise "\n\n'#{splitted_item.name}' is included in 'subspecs_to_split' but it is used in multiple targets. This is unsupported.\nIf possible duplicate the subspec '#{splitted_item.name}' in the podspec using different names for each target.\n".red
-          end
-        end
-      end
-
-      def self.check_splitted_subspecs_are_static(all_buildable_items)
-        non_static_subspecs = all_buildable_items.select { |x| x.is_subspec && x.is_static == false }
-        non_static_subspecs_names = non_static_subspecs.map(&:name)
-
-        invalid_subspecs = Configuration.subspecs_to_split & non_static_subspecs_names # intersect
-
-        unless invalid_subspecs.count > 0
-          return
-        end
-
-        warn_message = "The following pods `#{invalid_subspecs.join(" ")}` are non static binaries which are being splitted over different targets. Beware that this is an unsafe setup as per https://github.com/CocoaPods/CocoaPods/issues/5708 and https://github.com/CocoaPods/CocoaPods/issues/5643\n\nYou can ignore this error by passing the `--allow-warnings` flag to the build command\n"
-        if OPTIONS[:allow_warnings]
-          puts "\n\n#{warn_message}".yellow
-        else
-          raise "\n\n#{warn_message}".red
         end
       end
 

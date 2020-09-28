@@ -61,7 +61,6 @@ module PodBuilder
       attr_accessor :skip_pods
       attr_accessor :force_prebuild_pods
       attr_accessor :license_filename
-      attr_accessor :subspecs_to_split
       attr_accessor :development_pods_paths
       attr_accessor :build_base_path
       attr_accessor :build_path
@@ -92,7 +91,6 @@ module PodBuilder
     @skip_pods = DEFAULT_SKIP_PODS
     @force_prebuild_pods = DEFAULT_FORCE_PREBUILD_PODS
     @license_filename = "Pods-acknowledgements"
-    @subspecs_to_split = []
     @development_pods_paths = []
     @build_base_path = "/tmp/pod_builder".freeze
     @build_path = build_base_path
@@ -180,11 +178,6 @@ module PodBuilder
             Configuration.license_filename = value
           end
         end
-        if value = json["subspecs_to_split"]
-          if value.is_a?(Array) && value.count > 0
-            Configuration.subspecs_to_split = value
-          end
-        end
         if value = json["project_name"]
           if value.is_a?(String) && value.length > 0
             Configuration.project_name = value
@@ -263,7 +256,6 @@ module PodBuilder
       config["build_system"] = Configuration.build_system
       config["library_evolution_support"] = Configuration.library_evolution_support
       config["license_filename"] = Configuration.license_filename
-      config["subspecs_to_split"] = Configuration.subspecs_to_split
       config["restore_enabled"] = Configuration.restore_enabled
       config["allow_building_development_pods"] = Configuration.allow_building_development_pods
       config["use_bundler"] = Configuration.use_bundler

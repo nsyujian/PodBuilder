@@ -29,8 +29,5 @@
   },
   "build_system": "Legacy",
   "library_evolution_support": false,
-  "license_filename": "Pods-acknowledgements",
-  "subspecs_to_split": [
-
-  ]
+  "license_filename": "Pods-acknowledgements"
 }

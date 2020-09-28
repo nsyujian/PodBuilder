@@ -295,16 +295,14 @@ module PodBuilder
 
       root_names = deps.map(&:root_name).uniq
 
-      unless Configuration.subspecs_to_split.include?(name)
-        # We need to build all other common subspecs to properly build the item
-        # Ex. 
-        # PodA depends on DepA/subspec1
-        # PodB depends on DepA/subspec2
-        #
-        # When building PodA we need to build both DepA subspecs because they might 
-        # contain different code
-        deps += available_pods.select { |t| root_names.include?(t.root_name) && t.root_name != t.name && !Configuration.subspecs_to_split.include?(t.name) }
-      end
+      # We need to build all other common subspecs to properly build the item
+      # Ex. 
+      # PodA depends on DepA/subspec1
+      # PodB depends on DepA/subspec2
+      #
+      # When building PodA we need to build both DepA subspecs because they might 
+      # contain different code
+      deps += available_pods.select { |t| root_names.include?(t.root_name) && t.root_name != t.name }
 
       deps.uniq!
 
@@ -406,11 +404,7 @@ module PodBuilder
     end
 
     def prebuilt_rel_path
-      if is_subspec && Configuration.subspecs_to_split.include?(name)
-        return "Subspecs/#{podspec_name}/#{module_name}.framework"
-      else
-        return "#{module_name}.framework"
-      end
+      return "#{module_name}.framework"
     end
 
     def prebuilt_podspec_path(absolute_path = true)

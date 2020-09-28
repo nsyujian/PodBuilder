@@ -217,9 +217,6 @@ module PodBuilder
         
         podbuilder_file = File.join(path, Configuration.prebuilt_info_filename)
         entry = podfile_item.entry(true, false)
-        if Configuration.subspecs_to_split.include?(podfile_item.name)
-          entry.gsub!("'#{podfile_item.name}'", "'#{podfile_item.root_name}'")
-        end
         
         data = {}
         data["entry"] = entry
@@ -313,11 +310,8 @@ module PodBuilder
           podspec_path = item.prebuilt_podspec_path
           if last_build_folder_hash = build_folder_hash_in_prebuilt_info_file(item)
             if last_build_folder_hash == build_folder_hash(item, gitignored_files)
-              if Configuration.subspecs_to_split.include?(item.name)
-                puts "No changes detected to '#{item.name}', will skip rebuild".blue
-              else
-                puts "No changes detected to '#{item.root_name}', will skip rebuild".blue
-              end
+              puts "No changes detected to '#{item.root_name}', will skip rebuild".blue
+
               replaced_items.push(item)
 
               podfile_items.select { |t| t.root_name == item.root_name }.each do |replace_item|
@@ -385,33 +379,21 @@ module PodBuilder
 
       non_prebuilt_items = podfile_items.reject(&:is_prebuilt)
 
-      splitted_pods = non_prebuilt_items.map { |t| splitted_pod(t, podfile_items) }.flatten.uniq
-      splitted_pods_root_name = splitted_pods.map { |t| t.root_name }.uniq
-
-      pod_names = non_prebuilt_items.reject { |t| splitted_pods_root_name.include?(t.root_name) }.map(&:root_name).uniq + splitted_pods.map(&:name)
+      pod_names = non_prebuilt_items.map(&:root_name).uniq
 
       pod_names.reject! { |t| 
         folder_path = PodBuilder::buildpath_prebuiltpath(t)
         File.directory?(folder_path) && Dir.empty?(folder_path) # When using prebuilt items we end up with empty folders
       } 
 
-      # Selectively delete destination folder. 
-      # If it's a splitted spec we just need to wipe the Subspecs/#{pod_name}
-      # If it's not we need to wipe everything except the Subspecs folder
       pod_names.each do |pod_name|   
         root_name = pod_name.split("/").first
-        if pod_name.include?("/") # Splitted pod
-          PodBuilder::safe_rm_rf(PodBuilder::prebuiltpath("#{root_name}/Subspecs/#{pod_name.gsub("/", "_") }"))
-        else
-          items_to_delete = Dir.glob("#{PodBuilder::prebuiltpath(root_name)}/**/*")
-          items_to_delete.reject! { |t| t.include?(PodBuilder::prebuiltpath("#{root_name}/Subspecs")) }
 
-          items_to_delete.each { |t| PodBuilder::safe_rm_rf(t) }
-        end
+        items_to_delete = Dir.glob("#{PodBuilder::prebuiltpath(root_name)}/**/*")
+        items_to_delete.each { |t| PodBuilder::safe_rm_rf(t) }
       end
 
       # Now copy
-      splitted_items_copied = false
       pod_names.each do |pod_name|        
         root_name = pod_name.split("/").first
         source_path = PodBuilder::buildpath_prebuiltpath(root_name)
@@ -421,18 +403,9 @@ module PodBuilder
           next
         end
 
-        if Configuration.subspecs_to_split.include?(pod_name)
-          destination_folder = PodBuilder::prebuiltpath("#{root_name}/Subspecs/#{pod_name.gsub("/", "_") }")
-          FileUtils.mkdir_p(destination_folder)
-          unless splitted_items_copied
-            FileUtils.cp_r("#{source_path}/.", destination_folder)              
-            splitted_items_copied = true
-          end
-        else
-          destination_folder = PodBuilder::prebuiltpath(root_name)
-          FileUtils.mkdir_p(destination_folder)
-          FileUtils.cp_r("#{source_path}/.", destination_folder)  
-        end
+        destination_folder = PodBuilder::prebuiltpath(root_name)
+        FileUtils.mkdir_p(destination_folder)
+        FileUtils.cp_r("#{source_path}/.", destination_folder)  
       end
       
       # Folder won't exist if no dSYM were generated (all static libs)
@@ -522,9 +495,5 @@ module PodBuilder
         return replace_path
       end
     end 
-
-    def self.splitted_pod(podfile_item, podfile_items)
-      return podfile_items.select { |t| t.root_name == podfile_item.root_name && Configuration.subspecs_to_split.include?(t.name) }
-    end
   end
 end
