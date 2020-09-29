@@ -79,6 +79,9 @@ Options:
         # opts.on("-a", "--auto-resolve-deps", "Resolve pod dependencies automatically") do |o|
         #   OPTIONS[:auto_resolve_dependencies] = o
         # end
+        opts.on("-s", "--no-stdin", "Never request interaction with sdtin (e.g. in CI environment)") do |o|
+          OPTIONS[:no_stdin_available] = o
+        end
         opts.on("-d", "--debug", "Don't clean build folder") do |o|
           OPTIONS[:debug] = o
         end
@@ -107,6 +110,9 @@ Options:
         end
         opts.on("-w", "--allow-warnings", "Allow warnings") do |o|
           OPTIONS[:allow_warnings] = o
+        end
+        opts.on("-s", "--no-stdin", "Never request interaction with sdtin (e.g. in CI environment)") do |o|
+          OPTIONS[:no_stdin_available] = o
         end
         opts.on("-d", "--debug", "Don't clean build folder") do |o|
           OPTIONS[:debug] = o

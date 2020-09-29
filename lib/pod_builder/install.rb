@@ -179,7 +179,7 @@ module PodBuilder
         if File.directory?("#{Configuration.build_path}/Pods/Pods.xcodeproj")
           if ENV['DEBUGGING']
             system("xed #{Configuration.build_path}/Pods")  
-          else
+          elsif !OPTIONS.has_key?(:no_stdin_available)
             confirm = ask("\n\nOh no! Something went wrong during prebuild phase! Do you want to open the prebuild project to debug the error, you will need to add and run the Pods-Dummy scheme? [Y/N] ".red) { |yn| yn.limit = 1, yn.validate = /[yn]/i }
             if confirm.downcase == 'y'
               system("xed #{Configuration.build_path}/Pods")  
