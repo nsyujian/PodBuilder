@@ -17,7 +17,8 @@ module PodBuilder
     target_label = target.cocoapods_target_label
     
     xcodebuild(sandbox, target_label, device, deployment_target, configuration, deterministic_build, [], {})
-    excluded_archs = build_for_apple_silicon ? [] : ["arm64"]
+    excluded_archs = ["i386"] # Fixes https://github.com/Subito-it/PodBuilder/issues/17
+    excluded_archs += build_for_apple_silicon ? [] : ["arm64"]
     xcodebuild(sandbox, target_label, simulator, deployment_target, configuration, deterministic_build, excluded_archs, {})
 
     spec_names = target.specs.map { |spec| [spec.root.name, spec.root.module_name] }.uniq
