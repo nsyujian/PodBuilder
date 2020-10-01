@@ -27,7 +27,7 @@
   },
   "build_settings_overrides": {
   },
-  "build_system": "Legacy",
+  "build_system": "Latest",
   "library_evolution_support": false,
   "license_filename": "Pods-acknowledgements"
 }

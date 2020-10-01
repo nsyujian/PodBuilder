@@ -39,7 +39,7 @@ module PodBuilder
     }.freeze
     DEFAULT_SKIP_PODS = ["GoogleMaps"]
     DEFAULT_FORCE_PREBUILD_PODS = ["GoogleTagManager"]
-    DEFAULT_BUILD_SYSTEM = "Legacy".freeze # either Latest (New build system) or Legacy (Standard build system)
+    DEFAULT_BUILD_SYSTEM = "Latest".freeze # either Latest (New build system) or Legacy (Standard build system)
     DEFAULT_LIBRARY_EVOLUTION_SUPPORT = false
     DEFAULT_PLATFORMS = ["iphoneos", "iphonesimulator", "appletvos", "appletvsimulator"].freeze
     DEFAULT_BUILD_FOR_APPLE_SILICON = false
