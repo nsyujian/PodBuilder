@@ -37,29 +37,29 @@ module PodBuilder
         item_build_settings = Configuration.build_settings_overrides[item.name] || {}
         
         # These settings need to be set as is to properly build frameworks
-        build_settings['SWIFT_COMPILATION_MODE'] = 'wholemodule'
-        build_settings['ONLY_ACTIVE_ARCH'] = 'NO'
-        build_settings['DEBUG_INFORMATION_FORMAT'] = "dwarf-with-dsym"
+        build_settings["SWIFT_COMPILATION_MODE"] = "wholemodule"
+        build_settings["ONLY_ACTIVE_ARCH"] = "NO"
+        build_settings["DEBUG_INFORMATION_FORMAT"] = "dwarf-with-dsym"
 
-        build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = platform.deployment_target.version # Fix compilation warnings on Xcode 12
+        build_settings["IPHONEOS_DEPLOYMENT_TARGET"] = platform.deployment_target.version # Fix compilation warnings on Xcode 12
 
         # Don't store .pcm info in binary, see https://forums.swift.org/t/swift-behavior-of-gmodules-and-dsyms/23211/3
-        build_settings['CLANG_ENABLE_MODULE_DEBUGGING'] = 'NO'
-        build_settings['OTHER_SWIFT_FLAGS'] = "$(inherited) -Xfrontend -no-clang-module-breadcrumbs"
+        build_settings["CLANG_ENABLE_MODULE_DEBUGGING"] = "NO"
+        build_settings["OTHER_SWIFT_FLAGS"] = "$(inherited) -Xfrontend -no-clang-module-breadcrumbs"
 
         # Improve compile speed
-        build_settings['COMPILER_INDEX_STORE_ENABLE'] = 'NO'
-        build_settings['SWIFT_INDEX_STORE_ENABLE'] = 'NO'
-        build_settings['MTL_ENABLE_INDEX_STORE'] = 'NO'
+        build_settings["COMPILER_INDEX_STORE_ENABLE"] = "NO"
+        build_settings["SWIFT_INDEX_STORE_ENABLE"] = "NO"
+        build_settings["MTL_ENABLE_INDEX_STORE"] = "NO"
 
         if Configuration.build_system == "Legacy"
-          build_settings['BUILD_LIBRARY_FOR_DISTRIBUTION'] = "NO"
+          build_settings["BUILD_LIBRARY_FOR_DISTRIBUTION"] = "NO"
           raise "\n\nCan't enable library evolution support with legacy build system!".red if Configuration.library_evolution_support
         elsif Configuration.library_evolution_support
-          build_settings['BUILD_LIBRARY_FOR_DISTRIBUTION'] = "YES"
+          build_settings["BUILD_LIBRARY_FOR_DISTRIBUTION"] = "YES"
         end
 
-        build_settings['SWIFT_VERSION'] = item_build_settings["SWIFT_VERSION"] || item.swift_version || project_swift_version(analyzer)
+        build_settings["SWIFT_VERSION"] = item_build_settings["SWIFT_VERSION"] || item.swift_version || project_swift_version(analyzer)
 
         item_build_settings.each do |k, v|
           build_settings[k] = v
@@ -387,7 +387,7 @@ module PodBuilder
     def self.install_using_frameworks(analyzer)
       target_settings = analyzer.podfile.target_definition_list.map(&:uses_frameworks?).uniq
       if target_settings.count == 1
-        if target_settings.first == false && ENV['DEBUGGING'].nil?
+        if target_settings.first == false && ENV["DEBUGGING"].nil?
           raise "\n\nOnly framework packaging currently supported. Please add 'use_frameworks!' at Podfile root level (not nested in targets)".red
         end
         return target_settings.first

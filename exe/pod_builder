@@ -8,7 +8,7 @@ if show_version
   exit(0)
 end
 
-if ENV['DEBUGGING']
+if ENV["DEBUGGING"]
   puts "Running in debug, injecting $LOAD_PATH"
   libdir = File.expand_path("#{File.dirname(__FILE__)}/../lib")
   $LOAD_PATH.unshift(libdir) unless $LOAD_PATH.include?(libdir)
@@ -373,7 +373,7 @@ end
 
 command_ret = -1
 begin
-  unless ENV['USER'] != "root"
+  unless ENV["USER"] != "root"
     raise "\n\nFor safety do not run this as root\n".red
   end
 

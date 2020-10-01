@@ -259,8 +259,8 @@ module PodBuilder
     project = Xcodeproj::Project.open(project_path)
     project.targets.each do |target|
       config = target.build_configurations.find { |config| config.name.eql? configuration }
-      config.build_settings['DEBUG_INFORMATION_FORMAT'] = 'dwarf-with-dsym'
-      config.build_settings['ONLY_ACTIVE_ARCH'] = 'NO'
+      config.build_settings["DEBUG_INFORMATION_FORMAT"] = "dwarf-with-dsym"
+      config.build_settings["ONLY_ACTIVE_ARCH"] = "NO"
     end
     project.save
   end
