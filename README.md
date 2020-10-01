@@ -12,6 +12,10 @@ Unless you're using a Ruby version manager you should generally install using `s
 
     $ sudo gem install pod-builder
 
+## Requirements
+
+Ruby 2.6.3 or newer. Cocoapods 1.9.0 or newer
+
 # Quick start
 
 You can the initialize your project to use the tool using the `init` command
