@@ -61,6 +61,10 @@ module PodBuilder
 
         build_settings["SWIFT_VERSION"] = item_build_settings["SWIFT_VERSION"] || item.swift_version || project_swift_version(analyzer)
 
+        if build_settings["ENABLE_BITCODE"] == "YES"
+          build_settings["BITCODE_GENERATION_MODE"] = "bitcode"
+        end
+
         item_build_settings.each do |k, v|
           build_settings[k] = v
         end

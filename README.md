@@ -253,6 +253,8 @@ Xcode build settings to use. You can override the default values which are:
 } 
 ```
 
+If your project uses bitcode change "ENABLE_BITCODE" to "YES".
+
 #### `build_settings_overrides`
 
 Like `build_settings` but per pod. Pod name can also refer to subspec.
