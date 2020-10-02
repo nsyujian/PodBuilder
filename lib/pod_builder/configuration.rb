@@ -37,6 +37,11 @@ module PodBuilder
         "remove_module_maps": ["glog"]
       }
     }.freeze
+    DEFAULT_BUILD_SETTINGS_OVERRIDES = {
+      "SBTUITestTunnelClient": {
+        "ENABLE_BITCODE": "NO"
+      }
+    }.freeze
     DEFAULT_SKIP_PODS = ["GoogleMaps"]
     DEFAULT_FORCE_PREBUILD_PODS = ["GoogleTagManager"]
     DEFAULT_BUILD_SYSTEM = "Latest".freeze # either Latest (New build system) or Legacy (Standard build system)
@@ -46,6 +51,7 @@ module PodBuilder
     DEFAULT_BUILD_USING_REPO_PATHS = false
     
     private_constant :DEFAULT_BUILD_SETTINGS
+    private_constant :DEFAULT_BUILD_SETTINGS_OVERRIDES
     private_constant :DEFAULT_BUILD_SYSTEM
     private_constant :DEFAULT_LIBRARY_EVOLUTION_SUPPORT
     
@@ -82,7 +88,7 @@ module PodBuilder
     
     @allow_building_development_pods = false
     @build_settings = DEFAULT_BUILD_SETTINGS
-    @build_settings_overrides = {}
+    @build_settings_overrides = DEFAULT_BUILD_SETTINGS_OVERRIDES
     @build_system = DEFAULT_BUILD_SYSTEM
     @library_evolution_support = DEFAULT_LIBRARY_EVOLUTION_SUPPORT
     @base_path = "PodBuilder" # Not nice. This value is used only for initial initization. Once config is loaded it will be an absolute path. FIXME

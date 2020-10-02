@@ -257,7 +257,7 @@ Xcode build settings to use. You can override the default values which are:
 } 
 ```
 
-If your project uses bitcode change "ENABLE_BITCODE" to "YES".
+If your project uses bitcode change "ENABLE_BITCODE" to "YES". Please note that all pods that have dependencies to XCTest need to be add a `"ENABLE_BITCODE": "NO"` to the `build_settings_overrides` below.
 
 #### `build_settings_overrides`
 
