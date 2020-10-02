@@ -335,7 +335,7 @@ module PodBuilder
     end
     
     def self.install
-      puts "Prebuilding items".yellow
+      puts "Preparing build".yellow
       
       CLAide::Command::PluginManager.load_plugins("cocoapods")
       
