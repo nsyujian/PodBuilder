@@ -47,6 +47,9 @@ module PodBuilder
         build_settings["CLANG_ENABLE_MODULE_DEBUGGING"] = "NO"
         build_settings["OTHER_SWIFT_FLAGS"] = "$(inherited) -Xfrontend -no-clang-module-breadcrumbs"
 
+        # Ignore deprecation warnings
+        build_settings["GCC_WARN_ABOUT_DEPRECATED_FUNCTIONS"] = "NO"
+
         # Improve compile speed
         build_settings["COMPILER_INDEX_STORE_ENABLE"] = "NO"
         build_settings["SWIFT_INDEX_STORE_ENABLE"] = "NO"
