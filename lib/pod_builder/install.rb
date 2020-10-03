@@ -177,10 +177,13 @@ module PodBuilder
         return InstallResult.new(licenses, prebuilt_info)
       rescue Exception => e
         if File.directory?("#{Configuration.build_path}/Pods/Pods.xcodeproj")
+          activate_pod_scheme()
+
           if ENV["DEBUGGING"]
             system("xed #{Configuration.build_path}/Pods")  
           elsif !OPTIONS.has_key?(:no_stdin_available)
             confirm = ask("\n\nOh no! Something went wrong during prebuild phase! Do you want to open the prebuild project to debug the error, you will need to add and run the Pods-Dummy scheme? [Y/N] ".red) { |yn| yn.limit = 1, yn.validate = /[yn]/i }
+
             if confirm.downcase == 'y'
               system("xed #{Configuration.build_path}/Pods")  
             end
@@ -495,5 +498,17 @@ module PodBuilder
         return replace_path
       end
     end 
+
+    def self.activate_pod_scheme
+      if scheme_file = Dir.glob("#{Configuration.build_path}/Pods/**/xcschememanagement.plist").first
+        plist = CFPropertyList::List.new(:file => scheme_file)
+        data = CFPropertyList.native_types(plist.value)
+  
+        data["SchemeUserState"]["Pods-DummyTarget.xcscheme"]["isShown"] = true
+
+        plist.value = CFPropertyList.guess(data)
+        plist.save(scheme_file, CFPropertyList::List::FORMAT_BINARY)  
+      end
+    end
   end
 end
