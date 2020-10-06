@@ -47,7 +47,7 @@ begin
       end
     end
   end
-  
+
   # Starting from CocoaPods 1.10.0 and later resources are no longer copied inside the .framework
   # when building static frameworks. While this is correct when using CP normally, for redistributable
   # frameworks we require resources to be shipped along the binary
@@ -71,28 +71,6 @@ begin
       return res
     end
   end  
-  
-  class Pod::Target::BuildSettings
-    alias_method :swz_save_as, :save_as
-
-    @specs_remove_module_maps = Hash.new
-
-    class << self
-      attr_accessor :specs_remove_module_maps
-    end
-
-    def save_as(path)
-      Pod::Target::BuildSettings.specs_remove_module_maps.each do |root_name, module_maps_to_remove|
-        if target.name == root_name
-          module_maps_to_remove.each do |module_map_to_remove|
-            xcconfig.attributes["OTHER_CFLAGS"] = xcconfig.attributes["OTHER_CFLAGS"].gsub(/-fmodule-map-file=\S*#{module_map_to_remove}.modulemap.*?(\s|$)/, '')
-           end
-        end
-      end
-     
-      swz_save_as(path)
-    end
-  end
 rescue LoadError
   # CocoaPods 1.6.2 or earlier
 end
@@ -160,8 +138,6 @@ module PodBuilder
         FileUtils.touch(lock_file)
         
         prebuilt_entries = use_prebuilt_entries_for_unchanged_pods(podfile_path, podfile_items)
-
-        prepare_for_static_framework_workarounds(podfile_content, podfile_items)
         
         install
         
@@ -244,16 +220,6 @@ module PodBuilder
       return ret
     end
     private 
-
-    def self.prepare_for_static_framework_workarounds(podfile_content, podfile_items)
-      unless podfile_content.include?("use_modular_headers!")
-        return
-      end
-
-      podfile_items.each do |podfile_item|
-        Pod::Target::BuildSettings.specs_remove_module_maps[podfile_item.root_name] = podfile_item.remove_module_maps
-      end
-    end
     
     def self.license_specifiers
       acknowledge_file = "#{Configuration.build_path}/Pods/Target Support Files/Pods-DummyTarget/Pods-DummyTarget-acknowledgements.plist"

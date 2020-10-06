@@ -79,10 +79,6 @@ module PodBuilder
     #
     attr_accessor :build_configuration
 
-    # @return [Array<String>] When building static frameworks we sometimes have to remove module maps from Other C flags to make compilation succeed
-    #
-    attr_accessor :remove_module_maps
-
     # @return [String] The pod's vendored frameworks
     #
     attr_accessor :vendored_frameworks
@@ -211,8 +207,6 @@ module PodBuilder
       
       @build_configuration = spec.root.attributes_hash.dig("pod_target_xcconfig", "prebuild_configuration") || "release"
       @build_configuration.downcase!
-
-      @remove_module_maps = spec.root.attributes_hash["remove_module_maps"] || []
 
       default_license = "MIT"
       @license = spec.root.attributes_hash.fetch("license", {"type"=>"#{default_license}"})["type"] || default_license
