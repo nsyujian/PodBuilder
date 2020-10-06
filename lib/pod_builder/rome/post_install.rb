@@ -130,7 +130,7 @@ module PodBuilder
         if public_headers_path.downcase != module_public_headers_path.downcase && File.directory?(public_headers_path) && File.directory?(module_public_headers_path)
           # For pods with module_name != name we have to move the modulemap files to the root_name one
           module_public_headers_path = "#{Configuration.build_path}/Pods/Headers/Public/#{module_name}"  
-          FileUtils.cp_r("#{module_public_headers_path}/.", public_headers_path)
+          FileUtils.cp_r("#{module_public_headers_path}/.", public_headers_path, :remove_destination => true)
         end
         Dir.glob("#{public_headers_path}/**/*.*").each do |path|
           destination_folder = "#{device_base}/Headers" + path.gsub(public_headers_path, "")
