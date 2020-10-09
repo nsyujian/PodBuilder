@@ -469,8 +469,10 @@ module PodBuilder
       if scheme_file = Dir.glob("#{Configuration.build_path}/Pods/**/xcschememanagement.plist").first
         plist = CFPropertyList::List.new(:file => scheme_file)
         data = CFPropertyList.native_types(plist.value)
-  
-        data["SchemeUserState"]["Pods-DummyTarget.xcscheme"]["isShown"] = true
+
+        if !data.dig("SchemeUserState", "Pods-DummyTarget.xcscheme").nil?
+          data["SchemeUserState"]["Pods-DummyTarget.xcscheme"]["isShown"] = true
+        end
 
         plist.value = CFPropertyList.guess(data)
         plist.save(scheme_file, CFPropertyList::List::FORMAT_BINARY)  
