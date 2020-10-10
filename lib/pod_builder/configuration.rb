@@ -17,6 +17,9 @@ module PodBuilder
     DEFAULT_SPEC_OVERRIDE = {
       "Google-Mobile-Ads-SDK" => {
         "module_name": "GoogleMobileAds"
+      },
+      "glog" => {
+        "pod_target_xcconfig": { "DEFINES_MODULE": "NO" }
       }
     }.freeze
     DEFAULT_BUILD_SETTINGS_OVERRIDES = {
