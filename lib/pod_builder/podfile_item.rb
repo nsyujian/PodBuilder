@@ -75,6 +75,10 @@ module PodBuilder
     #
     attr_accessor :is_external
 
+    # @return [String] Header directory name
+    #
+    attr_accessor :header_dir
+
     # @return [String] The pod's build configuration
     #
     attr_accessor :build_configuration
@@ -171,6 +175,8 @@ module PodBuilder
 
       @libraries += extract_array(spec, "library")
       @libraries += extract_array(spec, "libraries")  
+
+      @header_dir = spec.attributes_hash["header_dir"]
 
       @version = spec.root.version.version
       @available_versions = spec.respond_to?(:spec_source) ? spec.spec_source.versions(@root_name)&.map(&:to_s) : [@version]

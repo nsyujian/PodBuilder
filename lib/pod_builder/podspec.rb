@@ -97,6 +97,9 @@ module PodBuilder
         if public_headers.count > 0
           podspec += "#{indentation}#{spec_var}.public_header_files = '#{item.root_name}/Headers/**/*.h'\n"
         end
+        if header_dir = item.header_dir && !install_using_frameworks
+          podspec += "#{indentation}#{spec_var}.header_dir = '#{header_dir}'\n"
+        end
 
         if item.xcconfig.keys.count > 0
           xcconfig = Hash.new
