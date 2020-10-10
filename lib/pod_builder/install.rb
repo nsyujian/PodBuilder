@@ -20,8 +20,13 @@ begin
       
       if overrides = PodBuilder::Configuration.spec_overrides[spec.name]
         overrides.each do |k, v|
+          if spec.attributes_hash[k].is_a?(Hash)
+            current = spec.attributes_hash[k]
+            spec.attributes_hash[k] = current.merge(v)
+          else
           spec.attributes_hash[k] = v
         end
+      end
       end
       
       spec
