@@ -130,6 +130,10 @@ module PodBuilder
     # @return [Array<String>] Default subspecs
     #
     attr_accessor :default_subspecs
+
+    # @return [Bool] Defines module
+    #
+    attr_accessor :defines_module
     
     # Initialize a new instance
     #
@@ -159,6 +163,11 @@ module PodBuilder
         @commit = spec.root.source[:commit]
         @is_external = false
       end    
+
+      @defines_module = true
+      if override = spec.attributes_hash.dig("pod_target_xcconfig", "DEFINES_MODULE")
+        @defines_module = (override == "YES")
+      end
       
       @vendored_frameworks = extract_vendored_frameworks(spec, all_specs)
       @vendored_libraries = extract_vendored_libraries(spec, all_specs)
