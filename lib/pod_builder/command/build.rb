@@ -72,6 +72,10 @@ module PodBuilder
         podfiles_items = [pods_to_build_debug] + [pods_to_build_release]
 
         install_using_frameworks = Podfile::install_using_frameworks(analyzer)
+
+        unless install_using_frameworks
+          prepare_defines_modules_override(all_buildable_items)
+        end
         
         install_result = InstallResult.new
         podfiles_items.reject { |x| x.empty? }.each do |podfile_items|
@@ -117,6 +121,12 @@ module PodBuilder
       end
 
       private
+
+      def self.prepare_defines_modules_override(all_buildable_items)
+        all_buildable_items.each do |item|
+          Pod::PodTarget.modules_override[item.root_name] = item.defines_module
+        end
+      end
 
       def self.check_not_building_subspecs(pods_to_build)
         pods_to_build.each do |pod_to_build|

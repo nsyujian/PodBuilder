@@ -24,9 +24,9 @@ begin
             current = spec.attributes_hash[k]
             spec.attributes_hash[k] = current.merge(v)
           else
-          spec.attributes_hash[k] = v
+            spec.attributes_hash[k] = v
+          end
         end
-      end
       end
       
       spec
@@ -53,6 +53,28 @@ begin
     end
   end
 
+  class Pod::PodTarget
+    @@modules_override = Hash.new
+
+    def self.modules_override= (x)
+      @@modules_override = x
+    end
+
+    def self.modules_override
+        return @@modules_override
+    end
+
+    alias_method :swz_defines_module?, :defines_module?
+
+    def defines_module?
+      if override = @@modules_override[name]
+        return override
+      end
+      
+      return swz_defines_module?
+    end
+  end
+  
   # Starting from CocoaPods 1.10.0 and later resources are no longer copied inside the .framework
   # when building static frameworks. While this is correct when using CP normally, for redistributable
   # frameworks we require resources to be shipped along the binary
