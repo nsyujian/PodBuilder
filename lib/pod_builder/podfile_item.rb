@@ -164,7 +164,7 @@ module PodBuilder
         @is_external = false
       end    
 
-      @defines_module = true
+      @defines_module = nil # nil is not specified
       if override = spec.attributes_hash.dig("pod_target_xcconfig", "DEFINES_MODULE")
         @defines_module = (override == "YES")
       end

@@ -124,7 +124,9 @@ module PodBuilder
 
       def self.prepare_defines_modules_override(all_buildable_items)
         all_buildable_items.each do |item|
-          Pod::PodTarget.modules_override[item.root_name] = item.defines_module
+          unless item.defines_module.nil?
+            Pod::PodTarget.modules_override[item.root_name] = item.defines_module
+          end
         end
       end
 

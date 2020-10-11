@@ -66,12 +66,8 @@ begin
 
     alias_method :swz_defines_module?, :defines_module?
 
-    def defines_module?
-      if override = @@modules_override[name]
-        return override
-      end
-      
-      return swz_defines_module?
+    def defines_module?      
+      return @@modules_override.has_key?(name) ? @@modules_override[name] : swz_defines_module?
     end
   end
   
