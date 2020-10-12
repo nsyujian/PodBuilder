@@ -25,7 +25,7 @@ module PodBuilder
         end
 
         dep_pod_names_to_switch = []
-        if OPTIONS[:switch_all] == true
+        if OPTIONS[:resolve_child_dependencies] == true
           pod_names_to_switch.each do |pod|
             podspec_path = PodBuilder::prebuiltpath("#{pod}/#{pod}.podspec")
             unless File.exist?(podspec_path)

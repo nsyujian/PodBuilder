@@ -297,8 +297,9 @@ Options:
         opts.on("-s", "--default", "Default version specified in PodBuilder-Podfile") do |o|
           OPTIONS[:switch_mode] = "default"
         end
-        opts.on("-a", "--all", "Include dependencies") do |o|
-          OPTIONS[:switch_all] = true
+        opts.on("-c", "--child-deps", "Include dependencies of the specified <PODNAME...>") do |o|
+          OPTIONS[:resolve_child_dependencies] = true
+        end
         end
       end,
       :call => [        
