@@ -20,14 +20,26 @@ module PodBuilder
       },
       "glog" => {
         "pod_target_xcconfig": { "DEFINES_MODULE": "NO" }
+      },
+      "DoubleConversion" => {
+        "pod_target_xcconfig": { "DEFINES_MODULE": "NO" }
+      },
+      "Folly" => {
+        "pod_target_xcconfig": { "DEFINES_MODULE": "NO" }
+      },
+      "Flipper-DoubleConversion" => {
+        "pod_target_xcconfig": { "DEFINES_MODULE": "NO" }
+      },
+      "Flipper-Folly" => {
+        "pod_target_xcconfig": { "DEFINES_MODULE": "NO" }
       }
     }.freeze
     DEFAULT_BUILD_SETTINGS_OVERRIDES = {
-      "SBTUITestTunnelClient": {
+      "SBTUITestTunnelClient" => {
         "ENABLE_BITCODE": "NO"
       }
     }.freeze
-    DEFAULT_SKIP_PODS = ["GoogleMaps", "boost-for-react-native"]
+    DEFAULT_SKIP_PODS = ["GoogleMaps"]
     DEFAULT_FORCE_PREBUILD_PODS = []
     DEFAULT_BUILD_SYSTEM = "Latest".freeze # either Latest (New build system) or Legacy (Standard build system)
     DEFAULT_LIBRARY_EVOLUTION_SUPPORT = false

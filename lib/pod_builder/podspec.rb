@@ -39,7 +39,7 @@ module PodBuilder
         existing_vendored_frameworks = vendored_frameworks.select(&if_exists)
         existing_vendored_frameworks_basename = vendored_frameworks.map { |t| File.basename(t) }.select(&if_exists)
         vendored_frameworks = (existing_vendored_frameworks + existing_vendored_frameworks_basename).uniq
-        
+
         vendored_libraries = item.vendored_libraries
         if install_using_frameworks
           existing_vendored_libraries = vendored_libraries.map { |t| "#{item.module_name}/#{t}" }.select(&if_exists)
@@ -56,10 +56,10 @@ module PodBuilder
 
           exclude_files = static_frameworks.map { |x| x.vendored_framework_path.nil? ? nil : "#{x.vendored_framework_path}/Info.plist" }.compact.flatten.uniq
           public_headers = []
-        else
+        else          
           public_headers = Dir.glob(PodBuilder::prebuiltpath("#{item.root_name}/#{item.root_name}/Headers/**/*.h"))
           vendored_libraries +=  ["#{item.root_name}/lib#{item.root_name}.a"]
-          vendored_libraries.map! { |t| "#{item.root_name}/#{t}" }.select(&if_exists)
+          vendored_libraries = vendored_libraries.select(&if_exists)
            
           resources = ["#{item.root_name}/*.{nib,bundle,xcasset,strings,png,jpg,tif,tiff,otf,ttf,ttc,plist,json,caf,wav,p12,momd}"]
 
@@ -97,8 +97,8 @@ module PodBuilder
         if public_headers.count > 0
           podspec += "#{indentation}#{spec_var}.public_header_files = '#{item.root_name}/Headers/**/*.h'\n"
         end
-        if header_dir = item.header_dir && !install_using_frameworks
-          podspec += "#{indentation}#{spec_var}.header_dir = '#{header_dir}'\n"
+        if !item.header_dir.nil? && !install_using_frameworks
+          podspec += "#{indentation}#{spec_var}.header_dir = '#{item.header_dir}'\n"
         end
 
         if item.xcconfig.keys.count > 0
@@ -125,20 +125,26 @@ module PodBuilder
             podspec += "#{indentation}#{spec_var}.xcconfig = #{xcconfig.to_s}\n"
           end
         end
-        if !install_using_frameworks && spec_var == "p1"
+        if !install_using_frameworks && spec_var == "p1" && vendored_libraries.map { |t| File.basename(t) }.include?("lib#{item.root_name}.a" )
           module_path_files = Dir.glob(PodBuilder.prebuiltpath("#{item.root_name}/**/#{item.root_name}.modulemap"))
           raise "\n\nToo many module maps found for #{item.root_name}".red if module_path_files.count > 1
+
+          rel_path = Pathname.new(PodBuilder::prebuiltpath).relative_path_from(Pathname.new(PodBuilder::project_path("Pods"))).to_s
+          prebuilt_root_var = "#{item.root_name.upcase.gsub("-", "_")}_PREBUILT_ROOT"
+
+          static_cfg = Hash.new
           if module_path_file = module_path_files.first
-            rel_path = Pathname.new(PodBuilder::prebuiltpath).relative_path_from(Pathname.new(PodBuilder::project_path("Pods"))).to_s
-            prebuilt_root_var = "#{item.root_name.upcase.gsub("-", "_")}_PREBUILT_ROOT"
             module_map_rel = module_path_file.gsub(PodBuilder::prebuiltpath("#{item.root_name}/#{item.root_name}/"), "")
-            static_cfg = { prebuilt_root_var => "$(PODS_ROOT)/#{rel_path}",
-                          "SWIFT_INCLUDE_PATHS" => "$(inherited) \"$(#{prebuilt_root_var})/#{item.root_name}/#{item.root_name}\"",
+            static_cfg = { "SWIFT_INCLUDE_PATHS" => "$(inherited) \"$(#{prebuilt_root_var})/#{item.root_name}/#{item.root_name}\"",
                           "OTHER_CFLAGS" => "$(inherited) -fmodule-map-file=\"$(#{prebuilt_root_var})/#{item.root_name}/#{item.root_name}/#{module_map_rel}\"",
                           "OTHER_SWIFT_FLAGS" => "$(inherited) -Xcc -fmodule-map-file=\"$(#{prebuilt_root_var})/#{item.root_name}/#{item.root_name}/#{module_map_rel}\""
-                          }
-            podspec += "#{indentation}#{spec_var}.xcconfig = #{static_cfg.to_s}\n"
-                        end
+                          }            
+          end
+          static_cfg[prebuilt_root_var] = "$(PODS_ROOT)/#{rel_path}"
+
+          podspec += "#{indentation}#{spec_var}.xcconfig = #{static_cfg.to_s}\n"
+          # This seems to be a viable workaround to https://github.com/CocoaPods/CocoaPods/issues/9559 and https://github.com/CocoaPods/CocoaPods/issues/8454
+          podspec += "#{indentation}#{spec_var}.user_target_xcconfig = { \"OTHER_LDFLAGS\" => \"$(inherited) -L\\\"$(#{prebuilt_root_var})/#{item.root_name}/#{item.root_name}\\\" -l\\\"#{item.root_name}\\\"\" }\n"
         end
   
         deps = item.dependency_names.sort
