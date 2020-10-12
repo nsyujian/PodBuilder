@@ -162,7 +162,7 @@ module PodBuilder
       end
 
       def self.check_not_building_development_pods(pods)
-        if (development_pods = pods.select { |x| x.is_development_pod }) && development_pods.count > 0 && (OPTIONS[:allow_warnings].nil?  && Configuration.allow_building_development_pods == false)
+        if (development_pods = pods.select { |x| x.is_development_pod }) && development_pods.count > 0 && (OPTIONS[:allow_warnings].nil?  && Configuration.allow_building_development_pods == false && Configuration.react_native_project == false)
           pod_names = development_pods.map(&:name).join(", ")
           raise "\n\nThe following pods are in development mode: `#{pod_names}`, won't proceed building.\n\nYou can ignore this error by passing the `--allow-warnings` flag to the build command\n".red
         end
