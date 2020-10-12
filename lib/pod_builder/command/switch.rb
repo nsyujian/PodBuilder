@@ -24,6 +24,27 @@ module PodBuilder
           pod_names_to_switch.push(pod_name_to_switch)
         end
 
+        if OPTIONS[:resolve_parent_dependencies] == true
+          install_update_repo = OPTIONS.fetch(:update_repos, true)
+          installer, analyzer = Analyze.installer_at(PodBuilder::basepath, install_update_repo)
+  
+          all_buildable_items = Analyze.podfile_items(installer, analyzer)
+
+          pod_names_to_switch.each do |pod_name|
+            if pod = (all_buildable_items.detect { |t| t.name == pod_name } || all_buildable_items.detect { |t| t.root_name == pod_name })
+              dependencies = []
+              all_buildable_items.each do |pod|
+                if !(pod.dependency_names & pod_names_to_switch).empty?
+                  dependencies.push(pod.root_name)
+                end
+              end
+              pod_names_to_switch += dependencies
+            end
+          end
+
+          pod_names_to_switch.uniq!
+        end
+
         dep_pod_names_to_switch = []
         if OPTIONS[:resolve_child_dependencies] == true
           pod_names_to_switch.each do |pod|
