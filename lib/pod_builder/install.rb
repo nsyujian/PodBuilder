@@ -395,9 +395,11 @@ module PodBuilder
           next
         end
 
-        destination_folder = PodBuilder::prebuiltpath(root_name)
-        FileUtils.mkdir_p(destination_folder)
-        FileUtils.cp_r("#{source_path}/.", destination_folder)  
+        unless Dir.glob("#{source_path}/**/*").select { |t| File.file?(t) }.empty?
+          destination_folder = PodBuilder::prebuiltpath(root_name)
+          FileUtils.mkdir_p(destination_folder)
+          FileUtils.cp_r("#{source_path}/.", destination_folder)  
+        end
       end
       
       # Folder won't exist if no dSYM were generated (all static libs)
