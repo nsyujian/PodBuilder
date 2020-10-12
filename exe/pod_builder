@@ -76,8 +76,8 @@ Options:
         opts.on("-w", "--allow-warnings", "Allow warnings") do |o|
           OPTIONS[:allow_warnings] = o
         end
-        opts.on("-a", "--auto-resolve-deps", "Include all pods that depend on the specified <PODNAME...>") do |o|
-          OPTIONS[:auto_resolve_dependencies] = o
+        opts.on("-r", "--parent-deps", "Include all pods that depend on the specified <PODNAME...>") do |o|
+          OPTIONS[:resolve_parent_dependencies] = true
         end
         opts.on("-s", "--no-stdin", "Never request interaction with sdtin (e.g. in CI environment)") do |o|
           OPTIONS[:no_stdin_available] = o

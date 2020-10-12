@@ -199,7 +199,7 @@ module PodBuilder
         pods_to_build = buildable_items.select { |x| argument_pods.include?(x.root_name) }
         pods_to_build += other_subspecs(pods_to_build, buildable_items)
 
-        if OPTIONS[:auto_resolve_dependencies]
+        if OPTIONS[:resolve_parent_dependencies]
           dependencies = []
           buildable_items.each do |pod|
             if !(pod.dependencies(buildable_items) & pods_to_build).empty?
