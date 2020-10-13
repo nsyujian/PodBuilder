@@ -395,7 +395,7 @@ module PodBuilder
       target_settings = analyzer.podfile.target_definition_list.map(&:uses_frameworks?).uniq
       if target_settings.count == 1
         if target_settings.first == false && ENV["DEBUGGING"].nil?
-          raise "\n\nOnly framework packaging currently supported. Please add 'use_frameworks!' at Podfile root level (not nested in targets)".red
+          raise "\n\nOnly framework packaging currently supported. Please add 'use_frameworks!' at root level (not nested in targets) in #{PodBuilder::basepath("Podfile")}".red
         end
         return target_settings.first
       elsif target_settings.count > 1
