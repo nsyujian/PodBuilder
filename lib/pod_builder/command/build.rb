@@ -73,7 +73,9 @@ module PodBuilder
 
         install_using_frameworks = Podfile::install_using_frameworks(analyzer)
 
-        unless install_using_frameworks
+        if install_using_frameworks
+          raise "\n\nOnly static library packaging currently supported for react native projects. Please remove 'use_frameworks!' in #{PodBuilder::basepath("Podfile")}".red if Configuration.react_native_project
+        else
           prepare_defines_modules_override(all_buildable_items)
         end
         
