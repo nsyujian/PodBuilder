@@ -328,7 +328,10 @@ Pod::HooksManager.register('podbuilder-rome', :post_install) do |installer_conte
         file_accessor = Pod::Sandbox::FileAccessor.new(sandbox.pod_dir(spec.root.name), consumer)
         files += file_accessor.vendored_libraries
         files += file_accessor.vendored_frameworks
-        files += file_accessor.resources
+        begin
+          files += file_accessor.resources
+        rescue
+        end
 
         FileUtils.mkdir_p(destination)        
         files.each do |file|
