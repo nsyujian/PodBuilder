@@ -274,7 +274,7 @@ Pod::HooksManager.register('podbuilder-rome', :post_install) do |installer_conte
   progressbar = ProgressBar.create(:length => 80, 
                                    :total => build_items_count,
                                    :title => "Building",
-                                   :format => "%t |%b>%i|".yellow)
+                                   :format => "%t |%b>%i| %c/%C done".yellow)
 
   progressbar_thread = Thread.new { 
     loop do
