@@ -72,11 +72,15 @@ module PodBuilder
         podfiles_items = [pods_to_build_debug] + [pods_to_build_release]
 
         install_using_frameworks = Podfile::install_using_frameworks(analyzer)
-
-        if install_using_frameworks
-          raise "\n\nOnly static library packaging currently supported for react native projects. Please remove 'use_frameworks!' in #{PodBuilder::basepath("Podfile")}".red if Configuration.react_native_project
-        else
+        if Configuration.react_native_project
+          if install_using_frameworks
+            raise "\n\nOnly static library packaging currently supported for react native projects. Please remove 'use_frameworks!' in #{PodBuilder::basepath("Podfile")}".red 
+          end  
           prepare_defines_modules_override(all_buildable_items)
+        else
+          unless install_using_frameworks
+            raise "\n\nOnly framework packaging currently supported. Please add 'use_frameworks!' at root level (not nested in targets) in #{PodBuilder::basepath("Podfile")}".red
+          end  
         end
         
         install_result = InstallResult.new
