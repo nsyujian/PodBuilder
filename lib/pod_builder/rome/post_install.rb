@@ -271,7 +271,7 @@ end
 
 Pod::HooksManager.register('podbuilder-rome', :post_install) do |installer_context, user_options|
   build_items_count = installer_context.umbrella_targets.map(&:specs).flatten.count * 2
-  progressbar = ProgressBar.create(:length => 50, 
+  progressbar = ProgressBar.create(:length => 80, 
                                    :total => build_items_count,
                                    :title => "Building",
                                    :format => "%t |%b>%i|".yellow)
