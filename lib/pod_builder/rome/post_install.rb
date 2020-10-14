@@ -317,7 +317,7 @@ Pod::HooksManager.register('podbuilder-rome', :post_install) do |installer_conte
   end  
 
   progressbar.finish
-  progressbar_thread.join
+  progressbar_thread.exit
     
   raise Pod::Informative, 'The build directory was not found in the expected location.' unless build_dir.directory?
   
