@@ -130,7 +130,7 @@ This command will generate a custom lldinit file which will be stored in the _Po
 
 The most convenient place to update the lldbinit file is in your Podfile pre_install or post_install actions. It is suggested to add the following lines
 
-````
+```
     pid = spawn("pod_builder generate_lldbinit")
     Process.detach(pid)
 ```
