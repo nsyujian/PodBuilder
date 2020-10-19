@@ -279,7 +279,7 @@ Pod::HooksManager.register('podbuilder-rome', :post_install) do |installer_conte
   progressbar_thread = Thread.new { 
     loop do
       built_pods = Dir.glob("#{PodBuilder::Configuration.build_path}/build/Release*/*").count
-      progressbar.progress = [0, built_pods - 1].max
+      progressbar.progress = [[0, built_pods - 1].max, progressbar.total].min
       sleep(5)
     end
   }
