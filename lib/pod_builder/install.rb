@@ -256,11 +256,7 @@ module PodBuilder
       return data["PreferenceSpecifiers"] || []
     end
     
-    def self.copy_development_pods_source_code(podfile_content, podfile_items)
-      if Configuration.build_using_repo_paths
-        return podfile_content
-      end
-      
+    def self.copy_development_pods_source_code(podfile_content, podfile_items)      
       # Development pods are normally built/integrated without moving files from their original paths.
       # It is important that CocoaPods compiles the files under Configuration.build_path in order that 
       # DWARF debug info reference to this constant path. Doing otherwise breaks the assumptions that 
@@ -276,7 +272,9 @@ module PodBuilder
           FileUtils.cp_r("#{PodBuilder::basepath(podfile_item.path)}/.", destination_path)
         end
         
-        podfile_content.gsub!("'#{podfile_item.path}'", "'#{destination_path}'")
+        unless Configuration.build_using_repo_paths
+          podfile_content.gsub!("'#{podfile_item.path}'", "'#{destination_path}'")
+        end
       end
       
       return podfile_content
