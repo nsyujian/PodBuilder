@@ -39,7 +39,8 @@ module PodBuilder
         "ENABLE_BITCODE": "NO"
       }
     }.freeze
-    DEFAULT_SKIP_PODS = ["GoogleMaps"]
+    DEFAULT_SKIP_PODS = ["GoogleMaps", "React-RCTFabric", "React-Core", "React-CoreModules"] # Not including React-RCTNetwork might loose some debug warnings
+
     DEFAULT_FORCE_PREBUILD_PODS = []
     DEFAULT_BUILD_SYSTEM = "Latest".freeze # either Latest (New build system) or Legacy (Standard build system)
     DEFAULT_LIBRARY_EVOLUTION_SUPPORT = false
