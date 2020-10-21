@@ -99,6 +99,7 @@ module PodBuilder
         end
         if !item.header_dir.nil? && !install_using_frameworks
           podspec += "#{indentation}#{spec_var}.header_dir = '#{item.header_dir}'\n"
+          podspec += "#{indentation}#{spec_var}.header_mappings_dir = '#{item.root_name}/Headers/#{item.header_dir}'\n"
         end
 
         if item.xcconfig.keys.count > 0

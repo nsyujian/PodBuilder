@@ -38,6 +38,7 @@ module PodBuilder
 
         if podfile_content.include?("/node_modules/react-native/")
           podfile_content = Podfile.prepare_for_react_native(podfile_content)
+          update_react_native_podspecs()
         end
 
         File.write(prebuilt_podfile_path, podfile_content)
@@ -115,6 +116,32 @@ module PodBuilder
 
       def self.trim_gemfile_line(line)
         return line.gsub("\"", "'").gsub(" ", "")
+      end
+
+      def self.update_react_native_podspecs
+        # React-Core.podspec
+        file = "React-Core.podspec"
+        paths = Dir.glob("#{PodBuilder::git_rootpath}/node_modules/**/#{file}")
+        raise "Unexpected number of #{file} found" if paths.count != 1
+
+        content = File.read(paths[0])
+        expected_header_search_path_prefix = "s.pod_target_xcconfig    = { \"HEADER_SEARCH_PATHS\" => \""
+        raise "Expected header search path entry not found" unless content.include?(expected_header_search_path_prefix)
+
+        content.sub!(expected_header_search_path_prefix, "#{expected_header_search_path_prefix}\\\"$(PODS_ROOT)/Headers/Public/Flipper-Folly\\\" ")
+        File.write(paths[0], content)        
+
+        # React-CoreModules.podspec
+        file = "React-CoreModules.podspec"
+        paths = Dir.glob("#{PodBuilder::git_rootpath}/node_modules/**/#{file}")
+        raise "Unexpected number of #{file} found" if paths.count != 1
+
+        content = File.read(paths[0])
+        expected_header_search_path_prefix = "\"HEADER_SEARCH_PATHS\" => \""
+        raise "Expected header search path entry not found" unless content.include?(expected_header_search_path_prefix)
+
+        content.sub!(expected_header_search_path_prefix, "#{expected_header_search_path_prefix}\\\"$(PODS_ROOT)/Headers/Public/Flipper-Folly\\\" ")
+        File.write(paths[0], content)
       end
     end
   end
