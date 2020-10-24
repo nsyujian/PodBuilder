@@ -154,7 +154,7 @@ module PodBuilder
         @tag = checkout_options[opts_key][:tag]
         @commit = checkout_options[opts_key][:commit]
         @path = checkout_options[opts_key][:path]
-        @podspec_path = checkout_options[opts_key][:podspec]
+        @podspec_path = checkout_options[opts_key][:podspec]        
         @branch = checkout_options[opts_key][:branch]
         @is_external = true
       else
@@ -212,6 +212,12 @@ module PodBuilder
 
       @is_static = spec.root.attributes_hash["static_framework"] || false
       @xcconfig = spec.root.attributes_hash["xcconfig"] || {}
+
+      if spec.attributes_hash.has_key?("script_phases")
+        Configuration.skip_pods += [name, root_name]
+        Configuration.skip_pods.uniq!
+        puts "Will skip '#{root_name}' which defines script_phase in podspec".blue
+      end
 
       default_subspecs_specs ||= begin
         subspecs = all_specs.select { |t| t.name.split("/").first == @root_name }
