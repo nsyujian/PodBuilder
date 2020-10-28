@@ -3,7 +3,6 @@
 require 'fourflusher'
 require 'colored'
 require 'pathname'
-require 'ruby-progressbar'
 
 module PodBuilder
   def self.build_for_iosish_platform_framework(sandbox, build_dir, target, device, simulator, configuration, deterministic_build, build_for_apple_silicon)
@@ -269,21 +268,7 @@ module PodBuilder
   end
 end
 
-Pod::HooksManager.register('podbuilder-rome', :post_install) do |installer_context, user_options|
-  build_items_count = installer_context.umbrella_targets.map(&:specs).flatten.count
-  progressbar = ProgressBar.create(:length => 80, 
-                                   :total => build_items_count,
-                                   :title => "Building",
-                                   :format => "%t |%b>%i| %c/%C done".yellow)
-
-  progressbar_thread = Thread.new { 
-    loop do
-      built_pods = Dir.glob("#{PodBuilder::Configuration.build_path}/build/Release*/*").count
-      progressbar.progress = [[0, built_pods - 1].max, progressbar.total].min
-      sleep(5)
-    end
-  }
-  
+Pod::HooksManager.register('podbuilder-rome', :post_install) do |installer_context, user_options|  
   enable_dsym = user_options.fetch('dsym', true)
   configuration = user_options.fetch('configuration', 'Debug')
   uses_frameworks = user_options.fetch('uses_frameworks', true)
@@ -315,9 +300,6 @@ Pod::HooksManager.register('podbuilder-rome', :post_install) do |installer_conte
     when [:watchos, false] then PodBuilder::build_for_iosish_platform_lib(sandbox, build_dir, target, 'watchos', 'watchsimulator', configuration, PodBuilder::Configuration.deterministic_build, PodBuilder::Configuration.build_for_apple_silicon, prebuilt_root_paths)
     else raise "\n\nUnknown platform '#{target.platform_name}'".red end
   end  
-
-  progressbar.finish
-  progressbar_thread.exit
     
   raise Pod::Informative, 'The build directory was not found in the expected location.' unless build_dir.directory?
   

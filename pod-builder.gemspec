@@ -35,5 +35,4 @@ Gem::Specification.new do |spec|
   spec.add_runtime_dependency 'cocoapods-core', '~> 1.6'
   spec.add_runtime_dependency 'CFPropertyList'
   spec.add_runtime_dependency 'json'
-  spec.add_runtime_dependency 'ruby-progressbar', '~> 1.10'
 end
