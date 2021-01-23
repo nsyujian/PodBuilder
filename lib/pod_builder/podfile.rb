@@ -15,7 +15,7 @@ module PodBuilder
 
       platform = analyzer.instance_variable_get("@result").targets.first.platform
 
-      # podfile.sub!("%%%use_frameworks%%%", install_using_frameworks ? "use_frameworks!" : "use_modular_headers!")
+      podfile.sub!("%%%use_frameworks%%%", install_using_frameworks ? "use_frameworks!" : "")
       podfile.sub!("%%%uses_frameworks%%%", install_using_frameworks ? "true" : "false")
       podfile.sub!("%%%build_xcframeworks%%%", build_xcframeworks ? "true" : "false")
       podfile.sub!("%%%build_catalyst%%%", build_catalyst ? "true" : "false")
