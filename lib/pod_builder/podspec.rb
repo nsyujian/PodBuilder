@@ -39,8 +39,9 @@ module PodBuilder
 
         existing_vendored_frameworks = vendored_frameworks.select(&if_exists)
         existing_vendored_frameworks_basename = vendored_frameworks.map { |t| File.basename(t) }.select(&if_exists)
+        puts "existing_vendored_frameworks_basename: #{existing_vendored_frameworks_basename}"
         vendored_frameworks = (existing_vendored_frameworks + existing_vendored_frameworks_basename).uniq
-
+        puts "vendored_frameworks.uniq: #{item.vendored_frameworks}"
         vendored_libraries = item.vendored_libraries
         puts "item.vendored_libraries: #{item.vendored_libraries}".yellow
         if install_using_frameworks
