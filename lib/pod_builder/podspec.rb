@@ -76,7 +76,7 @@ module PodBuilder
           public_headers = Dir.glob(PodBuilder::prebuiltpath("#{item.root_name}/#{item.root_name}/Headers/**/*.h"))
           vendored_libraries +=  ["#{item.root_name}/lib#{item.root_name}.a"]
           vendored_libraries = vendored_libraries.select(&if_exists)
-          put "vendored_libraries: #{vendored_libraries}"
+          puts "vendored_libraries: #{vendored_libraries}"
 
           resources = ["#{item.root_name}/*.{nib,bundle,xcasset,strings,png,jpg,tif,tiff,otf,ttf,ttc,plist,json,caf,wav,p12,momd}"]
 
