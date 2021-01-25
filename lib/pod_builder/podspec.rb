@@ -3,17 +3,17 @@
 
 module PodBuilder
   class Podspec
-    def self.generate(all_buildable_items, analyzer, install_using_frameworks)  
+    def self.generate(all_buildable_items, analyzer, install_using_frameworks)
       unless all_buildable_items.count > 0
         return
       end
-      
+
       puts "Generating PodBuilder's local podspec".yellow
-                  
+
       platform = analyzer.instance_variable_get("@result").targets.first.platform
       generate_podspec_from(all_buildable_items, platform, install_using_frameworks)
     end
-    
+
     private
 
     def self.generate_spec_keys_for(item, name, all_buildable_items, install_using_frameworks)
@@ -31,7 +31,8 @@ module PodBuilder
       if item.name == name
         if_exists = lambda { |t| File.exist?(PodBuilder::prebuiltpath("#{item.root_name}/#{t}") || "") }
 
-        vendored_frameworks = item.vendored_frameworks 
+        vendored_frameworks = item.vendored_frameworks
+        puts "item.vendored_frameworks: #{item.vendored_frameworks}".yellow
         if item.default_subspecs.reject { |t| "#{item.root_name}/#{t}" == item.name }.count == 0 && install_using_frameworks
           vendored_frameworks += ["#{item.module_name}.framework", "#{item.module_name}.xcframework"].select(&if_exists)
         end
@@ -41,10 +42,11 @@ module PodBuilder
         vendored_frameworks = (existing_vendored_frameworks + existing_vendored_frameworks_basename).uniq
 
         vendored_libraries = item.vendored_libraries
+        puts "item.vendored_libraries: #{item.vendored_libraries}".yellow
         if install_using_frameworks
           existing_vendored_libraries = vendored_libraries.map { |t| "#{item.module_name}/#{t}" }.select(&if_exists)
           existing_vendored_libraries_basename = vendored_libraries.map { |t| File.basename(t) }.select(&if_exists)
-          vendored_libraries = (existing_vendored_libraries + existing_vendored_libraries_basename).uniq        
+          vendored_libraries = (existing_vendored_libraries + existing_vendored_libraries_basename).uniq
 
           # .a are static libraries and should not be included again in the podspec to prevent duplicated symbols (in the app and in the prebuilt framework)
           vendored_libraries.reject! { |t| t.end_with?(".a") }
@@ -61,16 +63,16 @@ module PodBuilder
             if is_static
               parent_folder = File.expand_path("#{binary_path}/..")
               rel_path = Pathname.new(parent_folder).relative_path_from(Pathname.new(PodBuilder::prebuiltpath(item.root_name))).to_s
-              
+
               resources.push("#{rel_path}/*.{nib,bundle,xcasset,strings,png,jpg,tif,tiff,otf,ttf,ttc,plist,json,caf,wav,p12,momd}")
               exclude_files.push("#{rel_path}/Info.plist")
             end
           end
-        else          
+        else
           public_headers = Dir.glob(PodBuilder::prebuiltpath("#{item.root_name}/#{item.root_name}/Headers/**/*.h"))
           vendored_libraries +=  ["#{item.root_name}/lib#{item.root_name}.a"]
           vendored_libraries = vendored_libraries.select(&if_exists)
-           
+
           resources = ["#{item.root_name}/*.{nib,bundle,xcasset,strings,png,jpg,tif,tiff,otf,ttf,ttc,plist,json,caf,wav,p12,momd}"]
 
           exclude_files = ["*.modulemap"]
@@ -80,15 +82,15 @@ module PodBuilder
           exclude_files.map! { |t| "#{item.root_name}/#{t}" }
         end
 
-        entries = lambda { |spec_key, spec_value| 
+        entries = lambda { |spec_key, spec_value|
           key = "#{indentation}#{spec_var}.#{spec_key}"
           joined_values = spec_value.map { |t| "#{t}" }.uniq.sort.join("', '")
-          "#{key} = '#{joined_values}'\n" 
+          "#{key} = '#{joined_values}'\n"
         }
-          
+
         if vendored_frameworks.count > 0
           podspec += entries.call("vendored_frameworks", vendored_frameworks)
-        end      
+        end
         if vendored_libraries.count > 0
           podspec += entries.call("vendored_libraries", vendored_libraries)
         end
@@ -122,17 +124,17 @@ module PodBuilder
             unless k == "OTHER_LDFLAGS"
               next # For the time being limit to OTHER_LDFLAGS key
             end
-  
+
             if podspec_values = item.xcconfig[k]
               podspec_values_arr = podspec_values.split(" ")
               podspec_values_arr.push(v)
-              v = podspec_values_arr.join(" ")          
+              v = podspec_values_arr.join(" ")
             end
-            
+
             xcconfig[k] = item.xcconfig[k]
           end
-  
-          if xcconfig.keys.count > 0 
+
+          if xcconfig.keys.count > 0
             podspec += "#{indentation}#{spec_var}.xcconfig = #{xcconfig.to_s}\n"
           end
         end
@@ -149,7 +151,7 @@ module PodBuilder
             static_cfg = { "SWIFT_INCLUDE_PATHS" => "$(inherited) \"$(#{prebuilt_root_var})/#{item.root_name}/#{item.root_name}\"",
                           "OTHER_CFLAGS" => "$(inherited) -fmodule-map-file=\"$(#{prebuilt_root_var})/#{item.root_name}/#{item.root_name}/#{module_map_rel}\"",
                           "OTHER_SWIFT_FLAGS" => "$(inherited) -Xcc -fmodule-map-file=\"$(#{prebuilt_root_var})/#{item.root_name}/#{item.root_name}/#{module_map_rel}\""
-                          }            
+                          }
           end
           static_cfg[prebuilt_root_var] = "$(PODS_ROOT)/#{rel_path}"
 
@@ -157,7 +159,7 @@ module PodBuilder
           # This seems to be a viable workaround to https://github.com/CocoaPods/CocoaPods/issues/9559 and https://github.com/CocoaPods/CocoaPods/issues/8454
           podspec += "#{indentation}#{spec_var}.user_target_xcconfig = { \"OTHER_LDFLAGS\" => \"$(inherited) -L\\\"$(#{prebuilt_root_var})/#{item.root_name}/#{item.root_name}\\\" -l\\\"#{item.root_name}\\\"\" }\n"
         end
-  
+
         deps = item.dependency_names.sort
         if name == item.root_name
           deps.reject! { |t| t.split("/").first == item.root_name }
@@ -166,7 +168,7 @@ module PodBuilder
         deps.reject! { |t| t == item.name }
         all_buildable_items_name = all_buildable_items.map(&:name)
         deps.select! { |t| all_buildable_items_name.include?(t) }
-  
+
         if deps.count > 0
           if podspec.count("\n") > 1
             podspec += "\n"
@@ -191,8 +193,8 @@ module PodBuilder
         if podspec.length > 0
           podspec += "\n"
         end
-          
-        subspec_keys, subspec_valid = generate_spec_keys_for(subspec_item, subspec, all_buildable_items, install_using_frameworks) 
+
+        subspec_keys, subspec_valid = generate_spec_keys_for(subspec_item, subspec, all_buildable_items, install_using_frameworks)
         valid = valid || subspec_valid
 
         if subspec_keys.length > 0
@@ -201,7 +203,7 @@ module PodBuilder
           podspec += "#{indentation}end\n"
         end
       end
-    
+
       return podspec, valid
     end
 
@@ -213,7 +215,7 @@ module PodBuilder
         end
       end
 
-      all_buildable_items.each do |item|  
+      all_buildable_items.each do |item|
         if item.is_prebuilt
           next
         end
