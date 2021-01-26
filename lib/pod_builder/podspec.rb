@@ -32,21 +32,18 @@ module PodBuilder
         if_exists = lambda { |t| File.exist?(PodBuilder::prebuiltpath("#{item.root_name}/#{t}") || "") }
 
         vendored_frameworks = item.vendored_frameworks
-        puts "item.vendored_frameworks: #{item.vendored_frameworks}".yellow
         if item.default_subspecs.reject { |t| "#{item.root_name}/#{t}" == item.name }.count == 0 && install_using_frameworks
           vendored_frameworks += ["#{item.module_name}.framework", "#{item.module_name}.xcframework"].select(&if_exists)
         end
 
         existing_vendored_frameworks = vendored_frameworks.select(&if_exists)
         existing_vendored_frameworks_basename = vendored_frameworks.map { |t| "#{item.root_name}/#{File.basename(t)}" }.select(&if_exists)
-        puts "existing_vendored_frameworks_basename: #{existing_vendored_frameworks_basename}"
         vendored_frameworks = (existing_vendored_frameworks + existing_vendored_frameworks_basename).uniq
-        puts "vendored_frameworks.uniq: #{vendored_frameworks}"
 
         vendored_libraries = item.vendored_libraries
         existing_vendored_libraries_basename = vendored_libraries.map { |t| "#{item.root_name}/#{File.basename(t)}" }.select(&if_exists)
         vendored_libraries += existing_vendored_libraries_basename
-        puts "item.vendored_libraries: #{item.vendored_libraries}".yellow
+
         if install_using_frameworks
           existing_vendored_libraries = vendored_libraries.map { |t| "#{item.module_name}/#{t}" }.select(&if_exists)
           existing_vendored_libraries_basename = vendored_libraries.map { |t| File.basename(t) }.select(&if_exists)
@@ -76,7 +73,6 @@ module PodBuilder
           public_headers = Dir.glob(PodBuilder::prebuiltpath("#{item.root_name}/#{item.root_name}/Headers/**/*.h"))
           vendored_libraries +=  ["#{item.root_name}/lib#{item.root_name}.a"]
           vendored_libraries = vendored_libraries.select(&if_exists)
-          puts "vendored_libraries: #{vendored_libraries}"
 
           resources = ["#{item.root_name}/*.{nib,bundle,xcasset,strings,png,jpg,tif,tiff,otf,ttf,ttc,plist,json,caf,wav,p12,momd}"]
 
